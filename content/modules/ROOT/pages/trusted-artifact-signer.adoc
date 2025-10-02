@@ -1,0 +1,309 @@
+= Installing and Configuring Red Hat Trusted Artifact Signer on RHEL
+
+Red Hat Trusted Artifact Signer is a comprehensive solution for signing and verifying software artifacts to ensure their integrity and authenticity. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.
+
+== Overview
+
+The RHTAS service is the downstream redistribution of the https://sigstore.dev/[Sigstore project^]. The automation contained in https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs[the Ansible collection you will use^] will install and configure the components of RHTAS to run on a single RHEL server, which uses a standalone containerized deployment. A Kubernetes-based manifest creates Kubernetes manifests for the containers and are deployed using `podman kube play`.
+
+The RHTAS Ansible collection deploys the following RHTAS components:
+
+* Rekor - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.
+** Trillian database - A Merkle tree–backed data store that underpins Rekor’s transparency log.
+** Optional: A self-managed MariaDB instance (for durable SQL storage), and a Redis instance(caching and service management) (both highly recommended for production deployments to simplify operations and offload service management, including data backup and restoration).
+* Fulcio - A certificate authority that issues short-lived code-signing certificates tied to an OpenID Connect (OIDC) identity.
+* Certificate Log - A transparency log that records issued certificates for auditability and trust verification.
+* Timestamp Authority - A service that provides trusted cryptographic timestamps to prove when data or signatures existed.
+* The Update Framework (TUF) server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
+
+An https://www.nginx.com/[NGINX^] front end places an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establishing secure communications.
+
+This automation also deploys and configures a software load balancer as a central point of ingress. The ingress host names are as follows, where `<base_hostname>` is your deployment's base hostname (for your environment, it will be set to `{base_hostname}`):
+
+* `https://cli-server.<base_hostname>`
+* `https://fulcio.<base_hostname>`
+* `https://rekor.<base_hostname>`
+* `https://rekor-search.<base_hostname>`
+* `https://tsa.<base_hostname>`
+* `https://tuf.<base_hostname>`
+
+
+Many options exist: https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/
+
+== Install Trusted Artifact Signer
+
+== Verify Trusted Artifact Signer installation
+
+After installation and configuration, you can verify that Red Hat Trusted Artifact Signer (RHTAS) is working correctly by signing and verifying test artifacts. This section covers signing and verifying test artifacts using the following methods: Cosign for container images, Gitsign for Git commits, and Conforma (Enterprise Contract) for policy validation.
+
+=== Method 1: Container Image Signing and Verification with `cosign`
+
+`cosign` allows you to sign and verify Open Container Initiative (OCI) container images using RHTAS.
+
+==== Download and Install Cosign
+
+. Download the cosign binary from the CLI server web page:
++
+[source,bash]
+----
+# Navigate to the CLI server (replace with your actual hostname)
+# Example: https://cli-server.example.com
+----
+
+. Decompress and install the cosign binary:
++
+[source,bash]
+----
+gunzip cosign-amd64.gz
+chmod +x cosign-amd64
+sudo mv cosign-amd64 /usr/local/bin/cosign
+----
+
+==== Configure Environment Variables
+
+Set up your shell environment for container image signing and verification:
+
+[source,bash]
+----
+export BASE_HOSTNAME=BASE_HOSTNAME_OF_RHTAS_SERVICE
+export TUF_URL="https://tuf.${BASE_HOSTNAME}"
+export OIDC_ISSUER_URL=OIDC_ISSUER_URL
+export COSIGN_FULCIO_URL="https://fulcio.${BASE_HOSTNAME}"
+export COSIGN_REKOR_URL="https://rekor.${BASE_HOSTNAME}"
+export COSIGN_MIRROR=$TUF_URL
+export COSIGN_ROOT=$TUF_URL/root.json
+export COSIGN_OIDC_CLIENT_ID="trusted-artifact-signer"
+export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_YES="true"
+export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
+export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
+export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
+export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+----
+
+Replace `BASE_HOSTNAME_OF_RHTAS_SERVICE` with your RHTAS service hostname and `OIDC_ISSUER_URL` with your OpenID Connect provider URL.
+
+==== Create and Sign a Test Image
+
+. Initialize The Update Framework (TUF) system:
++
+[source,bash]
+----
+cosign initialize
+----
+
+. Create and push a test container image:
++
+[source,bash]
+----
+echo "FROM scratch" > ./tmp.Dockerfile
+podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image:1h
+podman push ttl.sh/rhtas/test-image:1h
+----
+
+. Sign the container image:
++
+[source,bash]
+----
+cosign sign -y ttl.sh/rhtas/test-image:1h
+----
+
+A web browser will open for authentication. Sign with your email address.
+
+. Clean up the temporary file:
++
+[source,bash]
+----
+rm ./tmp.Dockerfile
+----
+
+==== Verify the Signed Image
+
+. Verify the signed container image:
++
+[source,bash]
+----
+cosign verify --certificate-identity=jdoe@redhat.com ttl.sh/rhtas/test-image:1h
+----
+
+Replace `jdoe@redhat.com` with your actual signing email address.
+
+=== Method 2: Git Commit Signing and Verification with Gitsign
+
+Gitsign enables signing and verification of Git repository commits using RHTAS.
+
+==== Download and Install Gitsign
+
+. Download the gitsign binary from the CLI server web page
+. Decompress and install:
++
+[source,bash]
+----
+gunzip gitsign-amd64.gz
+chmod +x gitsign-amd64
+sudo mv gitsign-amd64 /usr/local/bin/gitsign
+----
+
+==== Configure Git Repository
+
+. Navigate to your local Git repository:
++
+[source,bash]
+----
+cd /path/to/your/git/repository
+----
+
+. Configure Git to use gitsign for commit signing:
++
+[source,bash]
+----
+git config --local commit.gpgsign true
+git config --local tag.gpgsign true
+git config --local gpg.x509.program gitsign
+git config --local gpg.format x509
+git config --local gitsign.fulcio $SIGSTORE_FULCIO_URL
+git config --local gitsign.rekor $SIGSTORE_REKOR_URL
+git config --local gitsign.issuer $SIGSTORE_OIDC_ISSUER
+git config --local gitsign.clientID trusted-artifact-signer
+----
+
+==== Sign and Verify Git Commit
+
+. Make a test commit:
++
+[source,bash]
+----
+git commit --allow-empty -S -m "Test of a signed commit"
+----
+
+A web browser will open for authentication.
+
+. Verify the commit:
++
+[source,bash]
+----
+gitsign verify --certificate-identity=jdoe@redhat.com --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
+----
+
+=== Method 3: Policy Validation with Conforma (Enterprise Contract)
+
+Conforma (formerly Enterprise Contract) validates container images against security policies.
+
+==== Download and Install Conforma
+
+. Download the ec binary from the CLI server web page
+. Decompress and install:
++
+[source,bash]
+----
+gunzip ec-amd64.gz
+chmod +x ec-amd64
+sudo mv ec-amd64 /usr/local/bin/ec
+----
+
+==== Create and Attest Test Image
+
+. Create a predicate.json file for SLSA provenance:
++
+[source,json]
+----
+{
+  "builder": {
+    "id": "https://localhost/dummy-id"
+  },
+  "buildType": "https://example.com/tekton-pipeline",
+  "invocation": {},
+  "buildConfig": {},
+  "metadata": {
+    "completeness": {
+      "parameters": false,
+      "environment": false,
+      "materials": false
+    },
+    "reproducible": false
+  },
+  "materials": []
+}
+----
+
+. Attach the predicate to your test image:
++
+[source,bash]
+----
+cosign attest -y --predicate ./predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h
+----
+
+. Verify the image has attestations and signatures:
++
+[source,bash]
+----
+cosign tree ttl.sh/rhtas/test-image:1h
+----
+
+==== Validate with Conforma
+
+. Run policy validation:
++
+[source,bash]
+----
+ec validate image --image ttl.sh/rhtas/test-image:1h --certificate-identity-regexp 'jdoe@example.com' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes
+----
+
+This will generate a pass-fail report with security validation details.
+
+=== Additional Verification Tools
+
+==== Rekor CLI for Transparency Log Queries
+
+. Download and install rekor-cli:
++
+[source,bash]
+----
+gunzip rekor-cli-amd64.gz
+chmod +x rekor-cli-amd64
+sudo mv rekor-cli-amd64 /usr/local/bin/rekor-cli
+----
+
+. Query the transparency log:
++
+[source,bash]
+----
+# Search by log index
+rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
+
+# Search by email address
+rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq
+
+# Get transaction details by UUID
+rekor-cli get --uuid UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
+----
+
+=== Verification Checklist
+
+Use this checklist to ensure your RHTAS installation is working correctly:
+
+- [ ] Cosign binary downloaded and installed
+- [ ] Environment variables configured correctly
+- [ ] TUF system initialized successfully
+- [ ] Test container image created and signed
+- [ ] Container image signature verified
+- [ ] Gitsign binary downloaded and installed
+- [ ] Git repository configured for signing
+- [ ] Test commit signed and verified
+- [ ] Conforma binary downloaded and installed
+- [ ] SLSA provenance attestation created
+- [ ] Policy validation completed successfully
+- [ ] Rekor transparency log accessible
+
+If all verification steps complete successfully, your RHTAS installation is working correctly and ready for production use.
+
+== Next Steps
+
+With Red Hat Trusted Artifact Signer installed and configured, you can now:
+* Sign software artifacts
+* Verify artifact integrity
+* Integrate with your CI/CD pipelines
+* Configure policy-based signing workflows
+
+For more advanced configuration options, refer to the official Red Hat Trusted Artifact Signer documentation.

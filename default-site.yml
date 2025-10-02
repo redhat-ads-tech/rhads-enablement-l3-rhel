@@ -1,7 +1,7 @@
 ---
 site:
-  title: Showroom Template Demo
-  url: https://redhat-scholars.github.io/course-template
+  title: Red Hat Advanced Developer Suite Enablement L3 RHEL
+  url: https://redhat-scholars.github.io/rhads-enablement-l3-rhel
   start_page: modules::index.adoc
 
 content:

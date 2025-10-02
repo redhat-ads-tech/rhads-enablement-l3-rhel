@@ -1,0 +1,138 @@
+= Installing and Configuring Red Hat Trusted Profile Analyzer on RHEL
+
+Red Hat Trusted Profile Analyzer is a security analysis tool that helps organizations assess and validate the security posture of their systems and applications. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.
+
+== Overview
+
+Red Hat Trusted Profile Analyzer provides:
+* Security posture assessment
+* Compliance validation against security standards
+* Vulnerability scanning and analysis
+* Policy enforcement and reporting
+* Integration with security frameworks
+
+[#prerequisites]
+== Prerequisites
+
+The workshop environment is pre-configured with Red Hat Enterprise Linux 10 and Red Hat Ansible Automation Platform. Before installing Red Hat Trusted Profile Analyzer, ensure your system meets the following requirements:
+
+. Red Hat Enterprise Linux 10 (pre-configured)
+. Red Hat Ansible Automation Platform (pre-configured)
+. Root or sudo access
+. Internet connectivity for package downloads
+. Minimum 8GB RAM
+. 50GB available disk space
+. Network access to target systems for analysis
+
+. Verify your system meets the requirements:
++
+[source,bash]
+----
+cat /etc/redhat-release
+free -h
+df -h /
+----
+
+[#installation]
+== Installation
+
+Red Hat Trusted Profile Analyzer can be installed using Red Hat Ansible Automation Platform with the supported Ansible Collections.
+
+. Verify Ansible Automation Platform is available:
++
+[source,bash]
+----
+ansible --version
+ansible-galaxy collection list | grep trusted
+----
+
+. Create an Ansible playbook for Red Hat Trusted Profile Analyzer installation:
++
+[source,bash]
+----
+cat > install-trusted-profile-analyzer.yml << 'EOF'
+---
+- name: Install Red Hat Trusted Profile Analyzer
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Enable required repositories
+      command: subscription-manager repos --enable=rhel-10-for-x86_64-appstream-rpms
+      
+    - name: Install Red Hat Trusted Profile Analyzer packages
+      dnf:
+        name: redhat-trusted-profile-analyzer
+        state: present
+        
+    - name: Verify installation
+      command: rpm -qa | grep trusted-profile-analyzer
+      register: installed_packages
+      
+    - name: Display installed packages
+      debug:
+        var: installed_packages.stdout_lines
+EOF
+----
+
+. Execute the Ansible playbook:
++
+[source,bash]
+----
+ansible-playbook install-trusted-profile-analyzer.yml
+----
+
+[#configuration]
+== Configuration
+
+After installation, configure Red Hat Trusted Profile Analyzer using Ansible Automation Platform.
+
+. Create a configuration playbook:
++
+[source,bash]
+----
+cat > configure-trusted-profile-analyzer.yml << 'EOF'
+---
+- name: Configure Red Hat Trusted Profile Analyzer
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Initialize configuration
+      command: trusted-profile-analyzer init
+      
+    - name: Configure analysis policies
+      command: trusted-profile-analyzer policy --create-default
+      
+    - name: Enable and start service
+      systemd:
+        name: trusted-profile-analyzer
+        enabled: yes
+        state: started
+        
+    - name: Verify service status
+      command: systemctl status trusted-profile-analyzer
+      register: service_status
+      
+    - name: Display service status
+      debug:
+        var: service_status.stdout_lines
+EOF
+----
+
+. Execute the configuration playbook:
++
+[source,bash]
+----
+ansible-playbook configure-trusted-profile-analyzer.yml
+----
+
+== Next Steps
+
+With Red Hat Trusted Profile Analyzer installed and configured, you can now:
+* Perform security posture assessments
+* Validate compliance against security standards
+* Generate security reports
+* Integrate with your security monitoring systems
+* Configure automated analysis workflows
+
+For more advanced configuration options, refer to the official Red Hat Trusted Profile Analyzer documentation.
+

@@ -1,0 +1,605 @@
+
+2.2. Verify the Trusted Artifact Signer installation 
+
+As as systems administrator, you can verify if the deployment of Red Hat Trusted Artifact Signer (RHTAS) running on Red Hat Enterprise Linux was successful.
+
+You can sign a test container image, and verify the authenticity of that signature to validate the deployment of RHTAS in your environment.
+
+There are two ways to sign and three ways to verify build artifacts from your code pipeline. You can sign and verify with cosign and gitsign, but can only verify with Enterprise Contract.
+
+2.2.1. Signing and verifying containers by using Cosign from the command-line interface 
+
+The cosign tool gives you the capability to sign and verify Open Container Initiative (OCI) container images, along with other build artifacts by using Red Hat’s Trusted Artifact Signer (RHTAS) service.
+
+Important
+For RHTAS, you must use cosign version 2.2 or later.
+
+Prerequisites
+
+Installation of RHTAS running on Red Hat Enterprise Linux 9.4 or later managed by Ansible.
+A workstation with the podman binary installed.
+Procedure
+
+Download the cosign binary from the local command-line interface (CLI) tool download page to your workstation.
+
+Note
+The URL address is the configured node as defined by the tas_single_node_base_hostname variable. An example URL address would be, https://cli-server.example.com, given the tas_single_node_base_hostname value as example.com.
+
+From the download page, go to the cosign download section, and click the link for your platform.
+Open a terminal on your workstation, decompress the binary .gz file, and set the execution bit:
+
+$ gunzip cosign-amd64.gz
+$ chmod +x cosign-amd64
+
+Move and rename the binary to a location within your $PATH environment:
+
+$ sudo mv cosign-amd64 /usr/local/bin/cosign
+
+Configure your shell environment for doing container image signing and verifying.
+
+$ export BASE_HOSTNAME=BASE_HOSTNAME_OF_RHTAS_SERVICE
+$ export TUF_URL="https://tuf.${BASE_HOSTNAME}"
+$ export OIDC_ISSUER_URL=OIDC_ISSUER_URL
+$ export COSIGN_FULCIO_URL="https://fulcio.${BASE_HOSTNAME}"
+$ export COSIGN_REKOR_URL="https://rekor.${BASE_HOSTNAME}"
+$ export COSIGN_MIRROR=$TUF_URL
+$ export COSIGN_ROOT=$TUF_URL/root.json
+$ export COSIGN_OIDC_CLIENT_ID="trusted-artifact-signer"
+$ export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
+$ export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
+$ export COSIGN_YES="true"
+$ export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
+$ export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
+$ export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
+$ export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+Show more
+
+Replace BASE_HOSTNAME_OF_RHTAS_SERVICE with the value of the tas_single_node_base_hostname` variable, and replace OIDC_ISSUER_URL with your OpenID Connect (OIDC) provider’s URL string.
+
+Initialize The Update Framework (TUF) system:
+
+$ cosign initialize
+
+Sign a test container image.
+
+Create an empty container image:
+
+$ echo "FROM scratch" > ./tmp.Dockerfile
+$ podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image:1h
+
+Push the empty container image to the ttl.sh ephemeral registry:
+
+$ podman push ttl.sh/rhtas/test-image:1h
+
+Sign the container image:
+
+cosign sign -y IMAGE_NAME:TAG
+
+$ cosign sign -y ttl.sh/rhtas/test-image:1h
+
+A web browser opens allowing you to sign the container image with an email address.
+
+Remove the temporary Docker file:
+
+$ rm ./tmp.Dockerfile
+
+Verify a signed container image by using a certificate identity and issuer:
+
+cosign verify --certificate-identity=SIGNING_EMAIL_ADDR IMAGE_NAME:TAG
+
+$ cosign verify --certificate-identity=jdoe@redhat.com ttl.sh/rhtas/test-image:1h
+
+
+Note
+You can also use regular expressions for the certificate identity and issuer by using the following options to the cosign command, --certificate-identity-regexp and --certificate-oidc-issuer-regexp.
+
+Download the rekor-cli binary from the local command-line interface (CLI) tool download page to your workstation.
+
+Open a web browser, and go to the CLI server web page.
+
+Note
+The URL address is the configured node as defined by the tas_single_node_base_hostname variable. An example URL address would be, https://cli-server.example.com, given that the value of tas_single_node_base_hostname is example.com.
+
+From the download page, go to the rekor-cli download section, and click the link for your platform.
+Open a terminal on your workstation, decompress the binary .gz file, and set the execution bit:
+
+$ gunzip rekor-cli-amd64.gz
+$ chmod +x rekor-cli-amd64
+
+Move and rename the binary to a location within your $PATH environment:
+
+$ sudo mv rekor-cli-amd64 /usr/local/bin/rekor-cli
+
+Query the transparency log by using the Rekor command-line interface.
+
+Search based on the log index:
+
+$ rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
+
+
+Search for an email address to get the universal unique identifier (UUID):
+
+rekor-cli search --email SIGNING_EMAIL_ADDR --rekor_server $COSIGN_REKOR_URL --format json | jq
+
+
+$ rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq
+
+
+This command returns the UUID for use with the next step.
+
+Use the UUID to get the transaction details:
+
+rekor-cli get --uuid UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
+
+$ rekor-cli get --uuid 24296fb24b8ad77a71b9c1374e207537bafdd75b4f591dcee10f3f697f150d7cc5d0b725eea641e7 --rekor_server $COSIGN_REKOR_URL --format json | jq
+Copy to Clipboard
+
+Toggle word wrap
+Additional resources
+
+The Update Framework home page
+2.2.2. Signing and verifying commits by using Gitsign from the command-line interface 
+
+The gitsign tool gives you the ability to sign and verify Git repository commits by using Red Hat’s Trusted Artifact Signer (RHTAS) service.
+
+Prerequisites
+
+Installation of RHTAS running on Red Hat Enterprise Linux 9.4 or later managed by Ansible.
+A workstation with the git, and cosign binaries installed.
+
+You must use cosign version 2.2 or later.
+A locally cloned Git repository.
+Procedure
+
+Download the gitsign binary from the local command-line interface (CLI) tool download page to your workstation.
+
+Note
+The URL address is the configured node as defined by the tas_single_node_base_hostname variable. An example URL address would be, https://cli-server.example.com, given the tas_single_node_base_hostname value as example.com.
+
+From the download page, go to the gitsign download section, and click the link for your platform.
+Open a terminal on your workstation, decompress the .gz file, and set the execution bit:
+
+$ gunzip gitsign-amd64.gz
+$ chmod +x gitsign-amd64
+
+Move and rename the binary to a location within your $PATH environment:
+
+$ sudo mv gitsign-amd64 /usr/local/bin/gitsign
+
+Configure your shell environment for doing commit signing and verifying.
+
+$ export BASE_HOSTNAME=BASE_HOSTNAME_OF_RHTAS_SERVICE
+$ export TUF_URL="https://tuf.${BASE_HOSTNAME}"
+$ export OIDC_ISSUER_URL=OIDC_ISSUER_URL
+$ export COSIGN_FULCIO_URL="https://fulcio.${BASE_HOSTNAME}"
+$ export COSIGN_REKOR_URL="https://rekor.${BASE_HOSTNAME}"
+$ export COSIGN_MIRROR=$TUF_URL
+$ export COSIGN_ROOT=$TUF_URL/root.json
+$ export COSIGN_OIDC_CLIENT_ID="trusted-artifact-signer"
+$ export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
+$ export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
+$ export COSIGN_YES="true"
+$ export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
+$ export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
+$ export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
+$ export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+
+Replace BASE_HOSTNAME_OF_RHTAS_SERVICE with the value of the tas_single_node_base_hostname` variable, and replace OIDC_ISSUER_URL with your OpenID Connect (OIDC) provider’s URL string.
+
+Change directory (cd) to the local Git repository directory.
+Configure the local repository configuration to sign your commits by using the RHTAS service:
+
+$ git config --local commit.gpgsign true
+$ git config --local tag.gpgsign true
+$ git config --local gpg.x509.program gitsign
+$ git config --local gpg.format x509
+$ git config --local gitsign.fulcio $SIGSTORE_FULCIO_URL
+$ git config --local gitsign.rekor $SIGSTORE_REKOR_URL
+$ git config --local gitsign.issuer $SIGSTORE_OIDC_ISSUER
+$ git config --local gitsign.clientID trusted-artifact-signer
+
+Make a commit to the local repository:
+
+$ git commit --allow-empty -S -m "Test of a signed commit"
+
+A web browser opens allowing you to sign the commit with an email address.
+
+Initialize The Update Framework (TUF) system:
+
+$ cosign initialize
+
+Verify the commit:
+
+gitsign verify --certificate-identity=SIGNING_EMAIL --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
+
+
+$ gitsign verify --certificate-identity=jdoe@redhat.com --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
+
+
+Additional resources
+
+Signing and verifying container images on Red Hat Enterprise Linux
+Signing and verifying container images on Red Hat OpenShift Container Platform
+The Update Framework home page
+2.2.3. Verifying signatures on container images with Conforma 
+
+Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the ec binary to verify the attestation and signature of container images that use Red Hat’s Trusted Artifact Signer (RHTAS) signing framework.
+
+Prerequisites
+
+Installation of RHTAS running on Red Hat Enterprise Linux 9.4 or later managed by Ansible.
+A workstation with the cosign, and podman binaries installed.
+
+You must use cosign version 2.2 or later.
+Procedure
+
+Download the ec binary from the local command-line interface (CLI) tool download page to your workstation.
+
+Note
+The URL address is the configured node as defined by the tas_single_node_base_hostname variable. An example URL address would be, https://cli-server.example.com, given the tas_single_node_base_hostname value as example.com.
+
+From the download page, go to the ec download section, and click the link for your platform.
+Open a terminal on your workstation, decompress the binary .gz file, and set the execution bit:
+
+$ gunzip ec-amd64.gz
+$ chmod +x ec-amd64
+
+Move and rename the binary to a location within your $PATH environment:
+
+$ sudo mv ec-amd64 /usr/local/bin/ec
+
+Configure your shell environment for doing container image signing and verifying.
+
+$ export BASE_HOSTNAME=BASE_HOSTNAME_OF_RHTAS_SERVICE
+$ export TUF_URL="https://tuf.${BASE_HOSTNAME}"
+$ export OIDC_ISSUER_URL=OIDC_ISSUER_URL
+$ export COSIGN_FULCIO_URL="https://fulcio.${BASE_HOSTNAME}"
+$ export COSIGN_REKOR_URL="https://rekor.${BASE_HOSTNAME}"
+$ export COSIGN_MIRROR=$TUF_URL
+$ export COSIGN_ROOT=$TUF_URL/root.json
+$ export COSIGN_OIDC_CLIENT_ID="trusted-artifact-signer"
+$ export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
+$ export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
+$ export COSIGN_YES="true"
+$ export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
+$ export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
+$ export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
+$ export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+
+Replace BASE_HOSTNAME_OF_RHTAS_SERVICE with the value of the tas_single_node_base_hostname` variable, and replace OIDC_ISSUER_URL with your OpenID Connect (OIDC) provider’s URL string.
+
+Initialize The Update Framework (TUF) system:
+
+$ cosign initialize
+
+Sign a test container image.
+
+Create an empty container image:
+
+$ echo "FROM scratch" > ./tmp.Dockerfile
+$ podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image:1h
+
+Push the empty container image to the ttl.sh ephemeral registry:
+
+$ podman push ttl.sh/rhtas/test-image:1h
+
+Sign the container image:
+
+cosign sign -y IMAGE_NAME:TAG
+
+$ cosign sign -y ttl.sh/rhtas/test-image:1h
+
+A web browser opens allowing you to sign the container image with an email address.
+
+Remove the temporary Docker file:
+
+$ rm ./tmp.Dockerfile
+
+Create a predicate.json file:
+
+{
+  "builder": {
+    "id": "https://localhost/dummy-id"
+  },
+  "buildType": "https://example.com/tekton-pipeline",
+  "invocation": {},
+  "buildConfig": {},
+  "metadata": {
+    "completeness": {
+      "parameters": false,
+      "environment": false,
+      "materials": false
+    },
+    "reproducible": false
+  },
+  "materials": []
+}
+
+Refer to the SLSA provenance predicate specifications for more information about the schema layout.
+
+Associate the predicate.json file with the container image:
+
+cosign attest -y --predicate ./predicate.json --type slsaprovenance IMAGE_NAME:TAG
+
+
+$ cosign attest -y --predicate ./predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h
+
+
+Verify that the container image has at least one attestation and signature:
+
+cosign tree IMAGE_NAME:TAG
+
+$ cosign tree ttl.sh/rhtas/test-image:1h
+
+📦 Supply Chain Security Related artifacts for an image: ttl.sh/rhtas/test-image@sha256:7de5fa822a9d1e507c36565ee0cf50c08faa64505461c844a3ce3944d23efa35
+└── 💾 Attestations for an image tag: ttl.sh/rhtas/test-image:sha256-7de5fa822a9d1e507c36565ee0cf50c08faa64505461c844a3ce3944d23efa35.att
+   └── 🍒 sha256:40d94d96a6d3ab3d94b429881e1b470ae9a3cac55a3ec874051bdecd9da06c2e
+└── 🔐 Signatures for an image tag: ttl.sh/rhtas/test-image:sha256-7de5fa822a9d1e507c36565ee0cf50c08faa64505461c844a3ce3944d23efa35.sig
+   └── 🍒 sha256:f32171250715d4538aec33adc40fac2343f5092631d4fc2457e2116a489387b7
+
+
+Verify the container image by using Conforma:
+
+ec validate image --image IMAGE_NAME:TAG --certificate-identity-regexp 'SIGNER_EMAIL_ADDR' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes
+
+
+$ ec validate image --image ttl.sh/rhtas/test-image:1h --certificate-identity-regexp 'jdoe@example.com' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes
+
+success: true
+successes:
+  - metadata:
+      code: builtin.attestation.signature_check
+    msg: Pass
+  - metadata:
+      code: builtin.attestation.syntax_check
+    msg: Pass
+  - metadata:
+      code: builtin.image.signature_check
+    msg: Pass
+ec-version: v0.1.2427-499ef12
+effective-time: "2024-01-21T19:57:51.338191Z"
+key: ""
+policy: {}
+success: true
+
+
+Enterprise Contract generates a pass-fail report with details on any security violations. When you add the --info flag, the report includes more details and possible solutions for any violations found.
+
+Additional resources
+
+Enterprise Contract is now known as Conforma
+Appendix A. Service and StatefulSet YAML configuration for Red Hat build of Keycloak 
+
+The Service and StatefulSet YAML resource configuration used when configuring Red Hat’s build of Keycloak (RHBK) for Red Hat’s Trusted Artifact Signer (RHTAS) service.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-db
+  namespace: keycloak-system
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 5432
+  selector:
+    app: postgresql-db
+Show more
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql-db
+  namespace: keycloak-system
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgresql-db
+  serviceName: postgresql-db
+  template:
+    metadata:
+      labels:
+        app: postgresql-db
+    spec:
+      containers:
+      - env:
+        - name: POSTGRESQL_USER
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: postgresql-db
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: postgresql-db
+        - name: POSTGRESQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: database
+              name: postgresql-db
+        image: registry.redhat.io/rhel9/postgresql-15:latest
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+            - --live
+          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: postgresql-db
+        readinessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/pgsql/data
+          name: data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      volumeMode: Filesystem
+Show more
+
+Return to configuring RHBK procedure.
+
+Appendix B. Trusted Artifact Signer components and version numbers 
+
+The following tables list Red Hat’s Trusted Artifact Signer (RHTAS) software components and their corresponding version numbers for the 1.2.1 release.
+
+
+Expand
+Table B.1. Binaries
+Binary	Version
+cosign
+
+2.4.3
+
+gitsign
+
+0.12.0
+
+rekor-cli
+
+1.3.9
+
+ec
+
+0.6
+
+createtree
+
+1.7.1
+
+updatetree
+
+1.7.1
+
+tuftool
+
+0.12.0
+
+tuffer
+
+0.17.1
+
+fetch-tsa-certs
+
+1.2.4
+
+
+Show more
+Table B.2. Trillian
+Component	Version
+logserver
+
+1.7.1
+
+logsigner
+
+1.7.1
+
+database
+
+1.7.1
+
+redis
+
+1.7.1
+
+Table B.3. Rekor
+Component	Version
+rekor-server
+
+1.3.9
+
+backfill-redis
+
+1.3.9
+
+rekor-search-ui
+
+1.3.9
+
+Table B.4. Fulcio
+Component	Version
+fulcio-server
+
+1.6.6
+
+Table B.5. Certificate Transparency
+Component	Version
+certificate-transparency-go
+
+1.3.1
+
+Table B.6. Timestamp Authority
+Component	Version
+timestamp-authority
+
+1.2.4
+
+Additional resources
+
+Trillian project page on GitHub
+Rekor project page on GitHub
+Fulcio project page on GitHub
+Timestamp Authority project page on GitHub
+The Update Framework (TUF) home page
+Legal Notice 
+
+Copyright © 2025 Red Hat, Inc.
+The text of and illustrations in this document are licensed by Red Hat under a Creative Commons Attribution–Share Alike 3.0 Unported license ("CC-BY-SA"). An explanation of CC-BY-SA is available at http://creativecommons.org/licenses/by-sa/3.0/. In accordance with CC-BY-SA, if you distribute this document or an adaptation of it, you must provide the URL for the original version.
+Red Hat, as the licensor of this document, waives the right to enforce, and agrees not to assert, Section 4d of CC-BY-SA to the fullest extent permitted by applicable law.
+Red Hat, Red Hat Enterprise Linux, the Shadowman logo, the Red Hat logo, JBoss, OpenShift, Fedora, the Infinity logo, and RHCE are trademarks of Red Hat, Inc., registered in the United States and other countries.
+Linux® is the registered trademark of Linus Torvalds in the United States and other countries.
+Java® is a registered trademark of Oracle and/or its affiliates.
+XFS® is a trademark of Silicon Graphics International Corp. or its subsidiaries in the United States and/or other countries.
+MySQL® is a registered trademark of MySQL AB in the United States, the European Union and other countries.
+Node.js® is an official trademark of Joyent. Red Hat is not formally related to or endorsed by the official Joyent Node.js open source or commercial project.
+The OpenStack® Word Mark and OpenStack logo are either registered trademarks/service marks or trademarks/service marks of the OpenStack Foundation, in the United States and other countries and are used with the OpenStack Foundation's permission. We are not affiliated with, endorsed or sponsored by the OpenStack Foundation, or the OpenStack community.
+All other trademarks are the property of their respective owners.
+Format

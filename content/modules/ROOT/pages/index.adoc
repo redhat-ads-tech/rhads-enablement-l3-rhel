@@ -1,43 +1,64 @@
 = {lab_name}
 
-The `lab_name` var, known as an asciidoc attribute, above was set in `./content/antora.yml` and can be used to set the lab_name or title of your content.
-You are both free to change its value and if you prefer to use a different var name, you can change the value of `lab_name`, for example to `title` in `./content/antora.yml` and then reference it in your content as `\{title}`. +
+Welcome to the Red Hat Advanced Developer Suite Enablement (RHADS) workshop on RHEL. This workshop provides hands-on experience with two critical Red Hat security solutions for Red Hat Enterprise Linux environments that are included in RHADS.
+
+Use of RHTAS and RHTPA on RHEL is generally used in the following situations:
+
+* You wish to ensure the integrity and authenticity of your software artifacts in a pure RHEL environment.
+* You wish to integrate RHADS security components (like RHTAS and RHTPA) into your CI/CD pipeline that runs on a non-RHEL or non-OpenShift environment (e.g. xKS) where RHADS is not supported. Your pipelines can be configured to use these components running on RHEL.
 
 image::rhel-logo-black.jpg[rhel-logo-black,55%,55%]
 
-== Variables
+== Workshop Overview
 
-Other vars can also be set there, such as `ssh_user` and `ssh_password`, and referenced inline in the lab content by using the `\{foo}` syntax.
+This workshop consists of two comprehensive modules designed to help you understand, install, and configure Red Hat's advanced security solutions:
 
-This is another var, or asciidoc attribute, from `./content/antora.yml` {my_var}
+=== Module 1: Red Hat Trusted Artifact Signer
+Learn how to install and configure Red Hat Trusted Artifact Signer on RHEL to ensure the integrity and authenticity of your software artifacts through cryptographic signing and verification.
 
-== Writing your lab
+=== Module 2: Red Hat Trusted Profile Analyzer  
+Learn how to install and configure Red Hat Trusted Profile Analyzer on RHEL to assess and validate the security posture of your systems and applications.
 
-Whatever type of content you are writing we'll refer to your *content* as "your lab" in this document.
+== Workshop Environment
 
-=== Lab structure
+The workshop environment is pre-configured with:
+* Red Hat Enterprise Linux 10
+* Red Hat Build of Keycloak (acting as an OpenID Connect provider)
+* Red Hat Ansible Automation Platform
+* A pre-installed https://docs.ansible.com/ansible/latest/getting_started_ee/index.html[Ansible Execution Environment (EE)^] container image with the required Ansible Collections for the products (these can also be downloaded separately and used with a generic execution environment)
 
-Wether you are writing a lab
+The workshop uses a multi-machine architecture where Ansible jobs run from a bastion server to deploy and configure the security components:
 
-* First, we will build a monolithic application already compiled as RPM packages and put it into a container. This will allow us to deploy the application, copy it between machines, and update it separately from the operating system. This process affords us a portable and easily maintained component instead of tightly coupling the application with your operating system maintenance.
+* **Bastion Server**: (hostname: `bastion`) Runs Ansible Automation Platform and executes playbooks to install and configure TAS and TPA on target machines
+* **TAS Machine**: (hostname: `rhtas`) Dedicated RHEL 10 machine where Red Hat Trusted Artifact Signer is installed and configured
+* **TPA Machine**: (hostname: `rhtpa`) Dedicated RHEL 10 machine where Red Hat Trusted Profile Analyzer is installed and configured  
+* **Utility Machine**: (hostname: `utility`) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components
 
-* In closing we will build a second container on a different operating system version that makes an application not packaged into RPMs. This will be similar to a web application deployment, positioning the correct files at the right locations. To do this, we will pull a project from GitHub and position the component files within our container image. The purpose of this is to achieve a portable application container that can deploy on several different versions of Red Hat Enterprise Linux. This also provides the benefit of decoupling your application maintenance, which would all happen by building new containers versus operating system maintenance. The container is no longer reliant on the operating system installed on the machine where the application is deployed.
+From the bastion server, you can simply `ssh <hostname>` to access the target machines. These machines are also exposed (on predefined ports) to external traffic.
 
-. Now let's examine this cluster a bit more by describing the cluster (the `$GUID` environment variable is already set for you so you can immediately describe your individual cluster):
-+
-[source,sh,role=execute]
-----
-podman ps
-----
-+
-.Sample Output
-[source,texinfo,subs="attributes"]
-----
-CONTAINER ID  IMAGE                        COMMAND           CREATED      STATUS      PORTS                 NAMES
-2dcfee9e50c4  docker.io/library/httpd:2.4  httpd-foreground  3 hours ago  Up 3 hours  0.0.0.0:8080->80/tcp  showroom-httpd
-----
+== Prerequisites
 
-=== Lab Access
+Before starting these exercises for RHEL, ensure you have:
 
-The terminal window to your right is *already* logged into the lab environment as the `{ssh_user}` user via `ssh`. 
-All steps of this lab are to be completed as the `{ssh_user}` user.
+* A modern web browser
+* Basic knowledge of Linux command line operations
+* `registry.redhat.io` credentials. If you do not have these, please visit the https://access.redhat.com/articles/RegistryAuthentication[Registry Authentication^] article on the Red Hat Customer Portal and create an account. You can also https://access.redhat.com/terms-based-registry/create[create a new or use an existing Registry Service Account^].
+
+=== Optional Reading
+
+The prior lab that works on OpenShift provides foundational knowledge about Red Hat Trusted Artifact Signer and Red Hat Trusted Profile Analyzer, including their capabilities, use cases, and integration points. While not required, completing this optional module will enhance your understanding of the hands-on exercises in this workshop.
+
+== Lab Environment
+
+The terminal window to your right is *already* logged into the lab environment as the `lab-user` user via `ssh`. 
+You will use this terminal window to complete most steps of this workshop.
+
+Each module is self-contained and can be completed independently, allowing you to focus on the solutions most relevant to your needs.
+
+== Support and Resources
+
+For additional information and support:
+
+* https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer[Red Hat Trusted Artifact Signer Documentation^]
+* https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer[Red Hat Trusted Profile Analyzer Documentation^]  
+* https://access.redhat.com[Red Hat Customer Portal^]
