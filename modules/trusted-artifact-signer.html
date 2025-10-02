@@ -421,7 +421,7 @@ sudo chmod +x gitsign &amp;&amp; sudo mv gitsign /usr/local/bin/gitsign</code></
 </div>
 </li>
 <li>
-<p>Make a temporary Git repositoriy and configure Git to use gitsign for commit signing:</p>
+<p>Make a temporary Git repository and configure Git to use gitsign for commit signing:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir -p ~/tmp-git-repo &amp;&amp; cd ~/tmp-git-repo
@@ -511,7 +511,7 @@ EOF</code></pre>
 </div>
 </li>
 <li>
-<p>Verify the image has at leat one attestation and signature:</p>
+<p>Verify the image has at least one attestation and signature:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign tree ttl.sh/rhtas/test-image:1h</code></pre>
