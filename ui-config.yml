@@ -11,5 +11,5 @@ tabs:
    path: '/'
  - name: Llamastack Docs
    url: 'https://llama-stack.readthedocs.io/en/latest/'
- - name: Cats
+ - name: Cats2
    url: 'https://cats.com'
