@@ -139,7 +139,7 @@
 <div class="ulist">
 <ul>
 <li>
-<p>Rekor - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.</p>
+<p><a href="https://github.com/sigstore/rekor" target="_blank" rel="noopener">Rekor</a> - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.</p>
 <div class="ulist">
 <ul>
 <li>
@@ -152,7 +152,7 @@
 </div>
 </li>
 <li>
-<p>Fulcio - A certificate authority that issues short-lived code-signing certificates tied to an OpenID Connect (OIDC) identity.</p>
+<p><a href="https://github.com/sigstore/fulcio" target="_blank" rel="noopener">Fulcio</a> - A certificate authority that issues short-lived code-signing certificates tied to an OpenID Connect (OIDC) identity.</p>
 </li>
 <li>
 <p>Certificate Log - A transparency log that records issued certificates for auditability and trust verification.</p>
@@ -174,34 +174,126 @@
 <div class="ulist">
 <ul>
 <li>
-<p><code><a href="https://cli-server.&lt;base_hostname&gt" class="bare">https://cli-server.&lt;base_hostname&gt</a>;</code></p>
+<p><code><a href="https://cli-server.{base_hostname}" class="bare">https://cli-server.{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://fulcio.&lt;base_hostname&gt" class="bare">https://fulcio.&lt;base_hostname&gt</a>;</code></p>
+<p><code><a href="https://fulcio.{base_hostname}" class="bare">https://fulcio.{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://rekor.&lt;base_hostname&gt" class="bare">https://rekor.&lt;base_hostname&gt</a>;</code></p>
+<p><code><a href="https://rekor.{base_hostname}" class="bare">https://rekor.{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://rekor-search.&lt;base_hostname&gt" class="bare">https://rekor-search.&lt;base_hostname&gt</a>;</code></p>
+<p><code><a href="https://rekor-search.{base_hostname}" class="bare">https://rekor-search.{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://tsa.&lt;base_hostname&gt" class="bare">https://tsa.&lt;base_hostname&gt</a>;</code></p>
+<p><code><a href="https://tsa.{base_hostname}" class="bare">https://tsa.{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://tuf.&lt;base_hostname&gt" class="bare">https://tuf.&lt;base_hostname&gt</a>;</code></p>
+<p><code><a href="https://tuf.{base_hostname}" class="bare">https://tuf.{base_hostname}</a></code></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Many options exist: <a href="https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/" class="bare">https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/</a></p>
+<p>The following steps will take you through the installation and configuration of RHTAS on RHEL.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_install_trusted_artifact_signer"><a class="anchor" href="#_install_trusted_artifact_signer"></a>Install Trusted Artifact Signer</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_setup_environment_variables"><a class="anchor" href="#_setup_environment_variables"></a>Setup Environment Variables</h3>
+<div class="paragraph">
+<p>In the bastion server terminal, copy and paste this into the terminal and press <kbd>ENTER</kbd> to run the command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export BASE_HOSTNAME={base_hostname}
+export KEYCLOAK_REALM=trusted-artifact-signer
+export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
+export TUF_URL=https://tuf.$BASE_HOSTNAME
+export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
+export COSIGN_FULCIO_URL=https://fulcio.$BASE_HOSTNAME
+export COSIGN_REKOR_URL=https://rekor.$BASE_HOSTNAME
+export COSIGN_MIRROR=$TUF_URL
+export COSIGN_ROOT=$TUF_URL/root.json
+export COSIGN_OIDC_CLIENT_ID=$KEYCLOAK_REALM
+export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_YES="true"
+export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
+export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
+export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
+export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+export CLI_SERVER_URL=https://cli-server.$BASE_HOSTNAME</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, run these two commands, replacing the username and password or service account token with your own (don&#8217;t just copy-paste, you&#8217;ll need to replace the placeholders with your own values):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export REGISTRY_USERNAME=&lt;your username&gt;
+export REGISTRY_PASSWORD=&lt;your password or service account token&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_certificates_temporary_solution"><a class="anchor" href="#_create_certificates_temporary_solution"></a>Create certificates (Temporary solution)</h3>
+<div class="paragraph">
+<p>In the same terminal, copy and paste this into the terminal and press <kbd>Enter</kbd> to run the command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" &amp;&amp; \
+cd $TMPDIR &amp;&amp; \
+sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.${BASE_HOSTNAME}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' &amp;&amp; \
+sudo cat cert-00.pem cert-01.pem &gt; /home/lab-user/server.pem &amp;&amp; \
+sudo cat cert-02.pem &gt; /home/lab-user/root.pem &amp;&amp; \
+sudo cp /etc/letsencrypt/live/rhtpa.${BASE_HOSTNAME}/privkey.pem /home/lab-user &amp;&amp; \
+sudo chown lab-user /home/lab-user/*.pem &amp;&amp; \
+sudo chmod 660 /home/lab-user/*.pem &amp;&amp; \
+cd /home/lab-user &amp;&amp;
+sudo rm -rf $TMPDIR</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_ansible_playbook"><a class="anchor" href="#_create_ansible_playbook"></a>Create Ansible Playbook</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; EOF &gt; ~/rhtas-vars.yml
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_inventory_file"><a class="anchor" href="#_create_inventory_file"></a>Create Inventory File</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; EOF &gt; ~/inventory
+[rhtas]
+rhtas
 
+[rhtpa]
+rhtpa
+
+[all:vars]
+ansible_user=lab-user
+EOF</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_run_playbook_to_install_rhtas"><a class="anchor" href="#_run_playbook_to_install_rhtas"></a>Run Playbook to install RHTAS</h3>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cd ~ &amp;&amp; \
+ansible-navigator -m stdout --eei=localhost/ansible_ee --pp=missing run install_rhtas.yml --pae=false -i inventory
+EOF</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -215,115 +307,50 @@
 <div class="paragraph">
 <p><code>cosign</code> allows you to sign and verify Open Container Initiative (OCI) container images using RHTAS.</p>
 </div>
-<div class="sect3">
-<h4 id="_download_and_install_cosign"><a class="anchor" href="#_download_and_install_cosign"></a>Download and Install Cosign</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Download the cosign binary from the CLI server web page:</p>
-<div class="listingblock">
+<p>Download the cosign binary from the CLI server:</p>
+<div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Navigate to the CLI server (replace with your actual hostname)
-# Example: https://cli-server.example.com</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/cosign-amd64.gz | gunzip &gt; cosign
+sudo chmod +x cosign &amp;&amp; sudo mv cosign /usr/local/bin/cosign</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Decompress and install the cosign binary:</p>
-<div class="listingblock">
+<p>Initialize cosign:</p>
+<div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gunzip cosign-amd64.gz
-chmod +x cosign-amd64
-sudo mv cosign-amd64 /usr/local/bin/cosign</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_configure_environment_variables"><a class="anchor" href="#_configure_environment_variables"></a>Configure Environment Variables</h4>
-<div class="paragraph">
-<p>Set up your shell environment for container image signing and verification:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export BASE_HOSTNAME=BASE_HOSTNAME_OF_RHTAS_SERVICE
-export TUF_URL="https://tuf.${BASE_HOSTNAME}"
-export OIDC_ISSUER_URL=OIDC_ISSUER_URL
-export COSIGN_FULCIO_URL="https://fulcio.${BASE_HOSTNAME}"
-export COSIGN_REKOR_URL="https://rekor.${BASE_HOSTNAME}"
-export COSIGN_MIRROR=$TUF_URL
-export COSIGN_ROOT=$TUF_URL/root.json
-export COSIGN_OIDC_CLIENT_ID="trusted-artifact-signer"
-export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
-export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
-export COSIGN_YES="true"
-export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
-export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
-export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
-export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Replace <code>BASE_HOSTNAME_OF_RHTAS_SERVICE</code> with your RHTAS service hostname and <code>OIDC_ISSUER_URL</code> with your OpenID Connect provider URL.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_create_and_sign_a_test_image"><a class="anchor" href="#_create_and_sign_a_test_image"></a>Create and Sign a Test Image</h4>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Initialize The Update Framework (TUF) system:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign initialize</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -LO $COSIGN_ROOT
+cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1)</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Create and push a test container image:</p>
-<div class="listingblock">
+<p>Create an artifact to sign:</p>
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "FROM scratch" &gt; ./tmp.Dockerfile
 podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image:1h
-podman push ttl.sh/rhtas/test-image:1h</code></pre>
+rm ./tmp.Dockerfile</code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Sign the container image:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign sign -y ttl.sh/rhtas/test-image:1h</code></pre>
 </div>
 </div>
-</li>
-</ol>
-</div>
 <div class="paragraph">
-<p>A web browser will open for authentication. Sign with your email address.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Clean up the temporary file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rm ./tmp.Dockerfile</code></pre>
-</div>
+<p>A web browser opens allowing you to sign the container image with an email address.</p>
 </div>
 </li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_verify_the_signed_image"><a class="anchor" href="#_verify_the_signed_image"></a>Verify the Signed Image</h4>
-<div class="olist arabic">
-<ol class="arabic">
 <li>
 <p>Verify the signed container image:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign verify --certificate-identity=jdoe@redhat.com ttl.sh/rhtas/test-image:1h</code></pre>
 </div>
@@ -332,8 +359,47 @@ podman push ttl.sh/rhtas/test-image:1h</code></pre>
 </ol>
 </div>
 <div class="paragraph">
-<p>Replace <code>jdoe@redhat.com</code> with your actual signing email address.</p>
+<p>Now lets query the transparency log by using the Rekor command-line interface.</p>
 </div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Download the rekor-cli binary from the CLI server:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/rekor-cli-amd64.gz | gunzip &gt; rekor-cli
+sudo chmod +x rekor-cli &amp;&amp; sudo mv rekor-cli /usr/local/bin/rekor-cli</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Search by log index:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Search for an email address to get the universal unique identifier (UUID):</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command returns the UUID for use with the next step.</p>
+</div>
+</li>
+<li>
+<p>Get transaction details by UUID:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli get --uuid $UUID --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">
@@ -346,38 +412,21 @@ podman push ttl.sh/rhtas/test-image:1h</code></pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Download the gitsign binary from the CLI server web page</p>
-</li>
-<li>
-<p>Decompress and install:</p>
-<div class="listingblock">
+<p>Download the gitsign binary from the CLI server web page:</p>
+<div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gunzip gitsign-amd64.gz
-chmod +x gitsign-amd64
-sudo mv gitsign-amd64 /usr/local/bin/gitsign</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_configure_git_repository"><a class="anchor" href="#_configure_git_repository"></a>Configure Git Repository</h4>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Navigate to your local Git repository:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cd /path/to/your/git/repository</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/gitsign-amd64.gz | gunzip &gt; gitsign
+sudo chmod +x gitsign &amp;&amp; sudo mv gitsign /usr/local/bin/gitsign</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Configure Git to use gitsign for commit signing:</p>
-<div class="listingblock">
+<p>Make a temporary Git repositoriy and configure Git to use gitsign for commit signing:</p>
+<div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">git config --local commit.gpgsign true
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir -p ~/tmp-git-repo &amp;&amp; cd ~/tmp-git-repo
+git init
+git config --local commit.gpgsign true
 git config --local tag.gpgsign true
 git config --local gpg.x509.program gitsign
 git config --local gpg.format x509
@@ -388,31 +437,20 @@ git config --local gitsign.clientID trusted-artifact-signer</code></pre>
 </div>
 </div>
 </li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_sign_and_verify_git_commit"><a class="anchor" href="#_sign_and_verify_git_commit"></a>Sign and Verify Git Commit</h4>
-<div class="olist arabic">
-<ol class="arabic">
 <li>
-<p>Make a test commit:</p>
-<div class="listingblock">
+<p>Make a test commit and sign it:</p>
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">git commit --allow-empty -S -m "Test of a signed commit"</code></pre>
 </div>
 </div>
-</li>
-</ol>
-</div>
 <div class="paragraph">
-<p>A web browser will open for authentication.</p>
+<p>A web browser will open for authentication. Copy the code from the web browser into the terminal to complete the commit process and sign the commit.</p>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
+</li>
 <li>
 <p>Verify the commit:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gitsign verify --certificate-identity=jdoe@redhat.com --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD</code></pre>
 </div>
@@ -425,37 +463,25 @@ git config --local gitsign.clientID trusted-artifact-signer</code></pre>
 <div class="sect2">
 <h3 id="_method_3_policy_validation_with_conforma_enterprise_contract"><a class="anchor" href="#_method_3_policy_validation_with_conforma_enterprise_contract"></a>Method 3: Policy Validation with Conforma (Enterprise Contract)</h3>
 <div class="paragraph">
-<p>Conforma (formerly Enterprise Contract) validates container images against security policies.</p>
+<p>Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the ec binary to verify the attestation and signature of container images that use Red Hat&#8217;s Trusted Artifact Signer (RHTAS) signing framework.</p>
 </div>
-<div class="sect3">
-<h4 id="_download_and_install_conforma"><a class="anchor" href="#_download_and_install_conforma"></a>Download and Install Conforma</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Download the ec binary from the CLI server web page</p>
-</li>
-<li>
-<p>Decompress and install:</p>
-<div class="listingblock">
+<p>Download the ec binary from the CLI server:</p>
+<div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gunzip ec-amd64.gz
-chmod +x ec-amd64
-sudo mv ec-amd64 /usr/local/bin/ec</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/ec-amd64.gz | gunzip &gt; ec-amd64
+sudo chmod +x ec-amd64 &amp;&amp; sudo mv ec-amd64 /usr/local/bin/ec</code></pre>
 </div>
 </div>
 </li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_create_and_attest_test_image"><a class="anchor" href="#_create_and_attest_test_image"></a>Create and Attest Test Image</h4>
-<div class="olist arabic">
-<ol class="arabic">
 <li>
-<p>Create a predicate.json file for SLSA provenance:</p>
-<div class="listingblock">
+<p>Create a <code>predicate.json</code> file for SLSA provenance (Refer to the <a href="https://slsa.dev/spec/v1.0/provenance" target="_blank" rel="noopener">SLSA provenance predicate specifications</a> for more information about the schema layout):</p>
+<div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; EOF &gt; ~/predicate.json
+{
   "builder": {
     "id": "https://localhost/dummy-id"
   },
@@ -471,36 +497,30 @@ sudo mv ec-amd64 /usr/local/bin/ec</code></pre>
     "reproducible": false
   },
   "materials": []
-}</code></pre>
+}
+EOF</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Attach the predicate to your test image:</p>
-<div class="listingblock">
+<p>Attach the <code>predicate.json</code> file to the test image:</p>
+<div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign attest -y --predicate ./predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Verify the image has attestations and signatures:</p>
-<div class="listingblock">
+<p>Verify the image has at leat one attestation and signature:</p>
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign tree ttl.sh/rhtas/test-image:1h</code></pre>
 </div>
 </div>
 </li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_validate_with_conforma"><a class="anchor" href="#_validate_with_conforma"></a>Validate with Conforma</h4>
-<div class="olist arabic">
-<ol class="arabic">
 <li>
 <p>Run policy validation:</p>
-<div class="listingblock">
+<div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ec validate image --image ttl.sh/rhtas/test-image:1h --certificate-identity-regexp 'jdoe@example.com' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes</code></pre>
 </div>
@@ -509,43 +529,7 @@ sudo mv ec-amd64 /usr/local/bin/ec</code></pre>
 </ol>
 </div>
 <div class="paragraph">
-<p>This will generate a pass-fail report with security validation details.</p>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_additional_verification_tools"><a class="anchor" href="#_additional_verification_tools"></a>Additional Verification Tools</h3>
-<div class="sect3">
-<h4 id="_rekor_cli_for_transparency_log_queries"><a class="anchor" href="#_rekor_cli_for_transparency_log_queries"></a>Rekor CLI for Transparency Log Queries</h4>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Download and install rekor-cli:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gunzip rekor-cli-amd64.gz
-chmod +x rekor-cli-amd64
-sudo mv rekor-cli-amd64 /usr/local/bin/rekor-cli</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Query the transparency log:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Search by log index
-rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
-
-# Search by email address
-rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq
-
-# Get transaction details by UUID
-rekor-cli get --uuid UUID --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
+<p>Enterprise Contract generates a pass-fail report with details on any security violations. When you add the <code>--info</code> flag, the report includes more details and possible solutions for any violations found.</p>
 </div>
 </div>
 <div class="sect2">
@@ -603,14 +587,26 @@ rekor-cli get --uuid UUID --rekor_server $COSIGN_REKOR_URL --format json | jq</c
 <h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>With Red Hat Trusted Artifact Signer installed and configured, you can now:
-* Sign software artifacts
-* Verify artifact integrity
-* Integrate with your CI/CD pipelines
-* Configure policy-based signing workflows</p>
+<p>With Red Hat Trusted Artifact Signer installed and configured, you can now:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Sign software artifacts</p>
+</li>
+<li>
+<p>Verify artifact integrity</p>
+</li>
+<li>
+<p>Integrate with your CI/CD pipelines</p>
+</li>
+<li>
+<p>Configure policy-based signing workflows</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>For more advanced configuration options, refer to the official Red Hat Trusted Artifact Signer documentation.</p>
+<p>For more advanced configuration options, refer to the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer" target="_blank" rel="noopener">official Red Hat Trusted Artifact Signer documentation</a>.</p>
 </div>
 </div>
 </div>

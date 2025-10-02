@@ -121,10 +121,15 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Welcome to the Red Hat Advanced Developer Suite Enablement (RHADS) workshop on RHEL. This workshop provides hands-on experience with two critical Red Hat security solutions for Red Hat Enterprise Linux environments that are included in RHADS.</p>
+<p>Welcome to the Red Hat Advanced Developer Suite Enablement (RHADS) workshop on RHEL. This workshop provides hands-on experience with two critical Red Hat security solutions for <a href="https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux" target="_blank" rel="noopener">Red Hat Enterprise Linux</a> environments that are included in RHADS: <a href="https://developers.redhat.com/products/trusted-artifact-signer/overview" target="_blank" rel="noopener">Red Hat Trusted Artifact Signer (RHTAS)</a> and <a href="https://developers.redhat.com/products/trusted-profile-analyzer/overview" target="_blank" rel="noopener">Red Hat Trusted Profile Analyzer (RHTPA)</a>.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_cases"><a class="anchor" href="#_use_cases"></a>Use Cases</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>Use of RHTAS and RHTPA on RHEL is generally used in the following situations:</p>
+<p>Use of RHTAS and RHTPA on RHEL is generally used when:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -136,10 +141,8 @@
 </li>
 </ul>
 </div>
-<div class="imageblock">
-<div class="content">
-<img src="_images/rhel-logo-black.jpg" alt="rhel-logo-black" width="55%" height="55%">
-</div>
+<div class="paragraph">
+<p>For more information on RHTAS and RHTPA, consult the enablement courses for these solutions on OpenShift as part of the wider RHADS enablement series.</p>
 </div>
 </div>
 </div>
@@ -147,7 +150,7 @@
 <h2 id="_workshop_overview"><a class="anchor" href="#_workshop_overview"></a>Workshop Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This workshop consists of two comprehensive modules designed to help you understand, install, and configure Red Hat&#8217;s advanced security solutions:</p>
+<p>This workshop consists of two comprehensive modules designed to help you understand, install, and configure Red Hat&#8217;s advanced security solutions on RHEL:</p>
 </div>
 <div class="sect2">
 <h3 id="_module_1_red_hat_trusted_artifact_signer"><a class="anchor" href="#_module_1_red_hat_trusted_artifact_signer"></a>Module 1: Red Hat Trusted Artifact Signer</h3>
@@ -167,11 +170,23 @@
 <h2 id="_workshop_environment"><a class="anchor" href="#_workshop_environment"></a>Workshop Environment</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The workshop environment is pre-configured with:
-* Red Hat Enterprise Linux 10
-* Red Hat Build of Keycloak (acting as an OpenID Connect provider)
-* Red Hat Ansible Automation Platform
-* A pre-installed <a href="https://docs.ansible.com/ansible/latest/getting_started_ee/index.html" target="_blank" rel="noopener">Ansible Execution Environment (EE)</a> container image with the required Ansible Collections for the products (these can also be downloaded separately and used with a generic execution environment)</p>
+<p>This workshop environment is pre-configured with:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux-10" target="_blank" rel="noopener">Red Hat Enterprise Linux 10</a></p>
+</li>
+<li>
+<p><a href="https://access.redhat.com/products/red-hat-build-of-keycloak/" target="_blank" rel="noopener">Red Hat Build of Keycloak</a> (acting as an OpenID Connect provider)</p>
+</li>
+<li>
+<p><a href="https://www.redhat.com/en/technologies/management/ansible" target="_blank" rel="noopener">Red Hat Ansible Automation Platform</a></p>
+</li>
+<li>
+<p>A pre-installed <a href="https://docs.ansible.com/ansible/latest/getting_started_ee/index.html" target="_blank" rel="noopener">Ansible Execution Environment (EE)</a> container image with the required Ansible Collections for the products (these can also be downloaded separately and used with a generic execution environment)</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>The workshop uses a multi-machine architecture where Ansible jobs run from a bastion server to deploy and configure the security components:</p>
@@ -188,12 +203,9 @@
 <p><strong>TPA Machine</strong>: (hostname: <code>rhtpa</code>) Dedicated RHEL 10 machine where Red Hat Trusted Profile Analyzer is installed and configured</p>
 </li>
 <li>
-<p><strong>Utility Machine</strong>: (hostname: <code>utility</code>) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components</p>
+<p><strong>Utility Machine</strong>: (hostname: <code>utility</code>) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components. It also has a vanilla instance of PostgreSQL for use by Keycloak and RHTPA to store certificate and signing data.</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>From the bastion server, you can simply <code>ssh &lt;hostname&gt;</code> to access the target machines. These machines are also exposed (on predefined ports) to external traffic.</p>
 </div>
 </div>
 </div>
@@ -212,15 +224,33 @@
 <p>Basic knowledge of Linux command line operations</p>
 </li>
 <li>
-<p><code>registry.redhat.io</code> credentials. If you do not have these, please visit the <a href="https://access.redhat.com/articles/RegistryAuthentication" target="_blank" rel="noopener">Registry Authentication</a> article on the Red Hat Customer Portal and create an account. You can also <a href="https://access.redhat.com/terms-based-registry/create" target="_blank" rel="noopener">create a new or use an existing Registry Service Account</a>.</p>
+<p>One of the following <code>registry.redhat.io</code> credentials:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>A Red Hat account with username/password.</p>
+</li>
+<li>
+<p>A Red Hat Registry Service Account with username/token (which you will use as your password).</p>
 </li>
 </ul>
 </div>
-<div class="sect2">
-<h3 id="_optional_reading"><a class="anchor" href="#_optional_reading"></a>Optional Reading</h3>
-<div class="paragraph">
-<p>The prior lab that works on OpenShift provides foundational knowledge about Red Hat Trusted Artifact Signer and Red Hat Trusted Profile Analyzer, including their capabilities, use cases, and integration points. While not required, completing this optional module will enhance your understanding of the hands-on exercises in this workshop.</p>
+</li>
+</ul>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you do not have registry credentials, please visit the <a href="https://access.redhat.com/articles/RegistryAuthentication" target="_blank" rel="noopener">Registry Authentication</a> article on the Red Hat Customer Portal and create an account and remember your username and password. You can also <a href="https://access.redhat.com/terms-based-registry/create" target="_blank" rel="noopener">create a new or use an existing Registry Service Account</a> and remember your username and token.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
