@@ -210,7 +210,7 @@ Gitsign enables signing and verification of Git repository commits using RHTAS.
 curl -L $CLI_SERVER_URL/clients/linux/gitsign-amd64.gz | gunzip > gitsign 
 sudo chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
 ----
-. Make a temporary Git repositoriy and configure Git to use gitsign for commit signing:
+. Make a temporary Git repository and configure Git to use gitsign for commit signing:
 +
 [source,bash,role="execute"]
 ----
@@ -286,7 +286,7 @@ EOF
 cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h
 ----
 
-. Verify the image has at leat one attestation and signature:
+. Verify the image has at least one attestation and signature:
 +
 [source,bash,role="execute"]
 ----

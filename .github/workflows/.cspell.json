@@ -126,10 +126,25 @@
     "serverlessworkflow",
     "rhdhorchestrator",
     "Kogito",
-    "Knative"
+    "Knative",
+    "Trillian",
+    "Merkle",
+    "FULCIO",
+    "SIGSTORE",
+    "certsplit",
+    "csplit",
+    "letsencrypt",
+    "privkey",
+    "Gitsign",
+    "gitsign",
+    "gpgsign",
+    "fulcio",
+    "SLSA",
+    "slsaprovenance",
+    "rpms"
   ],
   "ignoreWords": [
-    "sysout"
+    "sysout",
     "adoc",
     "xref",
     "ifndef",
