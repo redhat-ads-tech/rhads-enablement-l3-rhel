@@ -1,17 +1,19 @@
 = {lab_name}
 
-Welcome to the Red Hat Advanced Developer Suite Enablement (RHADS) workshop on RHEL. This workshop provides hands-on experience with two critical Red Hat security solutions for Red Hat Enterprise Linux environments that are included in RHADS.
+Welcome to the Red Hat Advanced Developer Suite Enablement (RHADS) workshop on RHEL. This workshop provides hands-on experience with two critical Red Hat security solutions for https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux[Red Hat Enterprise Linux^] environments that are included in RHADS: https://developers.redhat.com/products/trusted-artifact-signer/overview[Red Hat Trusted Artifact Signer (RHTAS)^] and https://developers.redhat.com/products/trusted-profile-analyzer/overview[Red Hat Trusted Profile Analyzer (RHTPA)^]. 
 
-Use of RHTAS and RHTPA on RHEL is generally used in the following situations:
+== Use Cases
+
+Use of RHTAS and RHTPA on RHEL is generally used when:
 
 * You wish to ensure the integrity and authenticity of your software artifacts in a pure RHEL environment.
 * You wish to integrate RHADS security components (like RHTAS and RHTPA) into your CI/CD pipeline that runs on a non-RHEL or non-OpenShift environment (e.g. xKS) where RHADS is not supported. Your pipelines can be configured to use these components running on RHEL.
 
-image::rhel-logo-black.jpg[rhel-logo-black,55%,55%]
+For more information on RHTAS and RHTPA, consult the enablement courses for these solutions on OpenShift as part of the wider RHADS enablement series.
 
 == Workshop Overview
 
-This workshop consists of two comprehensive modules designed to help you understand, install, and configure Red Hat's advanced security solutions:
+This workshop consists of two comprehensive modules designed to help you understand, install, and configure Red Hat's advanced security solutions on RHEL:
 
 === Module 1: Red Hat Trusted Artifact Signer
 Learn how to install and configure Red Hat Trusted Artifact Signer on RHEL to ensure the integrity and authenticity of your software artifacts through cryptographic signing and verification.
@@ -21,10 +23,11 @@ Learn how to install and configure Red Hat Trusted Profile Analyzer on RHEL to a
 
 == Workshop Environment
 
-The workshop environment is pre-configured with:
-* Red Hat Enterprise Linux 10
-* Red Hat Build of Keycloak (acting as an OpenID Connect provider)
-* Red Hat Ansible Automation Platform
+This workshop environment is pre-configured with:
+
+* https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux-10[Red Hat Enterprise Linux 10^]
+* https://access.redhat.com/products/red-hat-build-of-keycloak/[Red Hat Build of Keycloak^] (acting as an OpenID Connect provider)
+* https://www.redhat.com/en/technologies/management/ansible[Red Hat Ansible Automation Platform^]
 * A pre-installed https://docs.ansible.com/ansible/latest/getting_started_ee/index.html[Ansible Execution Environment (EE)^] container image with the required Ansible Collections for the products (these can also be downloaded separately and used with a generic execution environment)
 
 The workshop uses a multi-machine architecture where Ansible jobs run from a bastion server to deploy and configure the security components:
@@ -32,9 +35,7 @@ The workshop uses a multi-machine architecture where Ansible jobs run from a bas
 * **Bastion Server**: (hostname: `bastion`) Runs Ansible Automation Platform and executes playbooks to install and configure TAS and TPA on target machines
 * **TAS Machine**: (hostname: `rhtas`) Dedicated RHEL 10 machine where Red Hat Trusted Artifact Signer is installed and configured
 * **TPA Machine**: (hostname: `rhtpa`) Dedicated RHEL 10 machine where Red Hat Trusted Profile Analyzer is installed and configured  
-* **Utility Machine**: (hostname: `utility`) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components
-
-From the bastion server, you can simply `ssh <hostname>` to access the target machines. These machines are also exposed (on predefined ports) to external traffic.
+* **Utility Machine**: (hostname: `utility`) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components. It also has a vanilla instance of PostgreSQL for use by Keycloak and RHTPA to store certificate and signing data.
 
 == Prerequisites
 
@@ -42,11 +43,14 @@ Before starting these exercises for RHEL, ensure you have:
 
 * A modern web browser
 * Basic knowledge of Linux command line operations
-* `registry.redhat.io` credentials. If you do not have these, please visit the https://access.redhat.com/articles/RegistryAuthentication[Registry Authentication^] article on the Red Hat Customer Portal and create an account. You can also https://access.redhat.com/terms-based-registry/create[create a new or use an existing Registry Service Account^].
+* One of the following `registry.redhat.io` credentials:
+** A Red Hat account with username/password.
+** A Red Hat Registry Service Account with username/token (which you will use as your password).
 
-=== Optional Reading
-
-The prior lab that works on OpenShift provides foundational knowledge about Red Hat Trusted Artifact Signer and Red Hat Trusted Profile Analyzer, including their capabilities, use cases, and integration points. While not required, completing this optional module will enhance your understanding of the hands-on exercises in this workshop.
+[NOTE]
+====
+If you do not have registry credentials, please visit the https://access.redhat.com/articles/RegistryAuthentication[Registry Authentication^] article on the Red Hat Customer Portal and create an account and remember your username and password. You can also https://access.redhat.com/terms-based-registry/create[create a new or use an existing Registry Service Account^] and remember your username and token.
+====
 
 == Lab Environment
 

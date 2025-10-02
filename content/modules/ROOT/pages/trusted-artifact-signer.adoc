@@ -8,10 +8,10 @@ The RHTAS service is the downstream redistribution of the https://sigstore.dev/[
 
 The RHTAS Ansible collection deploys the following RHTAS components:
 
-* Rekor - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.
+* https://github.com/sigstore/rekor[Rekor^] - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.
 ** Trillian database - A Merkle tree–backed data store that underpins Rekor’s transparency log.
 ** Optional: A self-managed MariaDB instance (for durable SQL storage), and a Redis instance(caching and service management) (both highly recommended for production deployments to simplify operations and offload service management, including data backup and restoration).
-* Fulcio - A certificate authority that issues short-lived code-signing certificates tied to an OpenID Connect (OIDC) identity.
+* https://github.com/sigstore/fulcio[Fulcio^] - A certificate authority that issues short-lived code-signing certificates tied to an OpenID Connect (OIDC) identity.
 * Certificate Log - A transparency log that records issued certificates for auditability and trust verification.
 * Timestamp Authority - A service that provides trusted cryptographic timestamps to prove when data or signatures existed.
 * The Update Framework (TUF) server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
@@ -20,17 +20,102 @@ An https://www.nginx.com/[NGINX^] front end places an entrypoint to the various 
 
 This automation also deploys and configures a software load balancer as a central point of ingress. The ingress host names are as follows, where `<base_hostname>` is your deployment's base hostname (for your environment, it will be set to `{base_hostname}`):
 
-* `https://cli-server.<base_hostname>`
-* `https://fulcio.<base_hostname>`
-* `https://rekor.<base_hostname>`
-* `https://rekor-search.<base_hostname>`
-* `https://tsa.<base_hostname>`
-* `https://tuf.<base_hostname>`
+* `https://cli-server.{base_hostname}`
+* `https://fulcio.{base_hostname}`
+* `https://rekor.{base_hostname}`
+* `https://rekor-search.{base_hostname}`
+* `https://tsa.{base_hostname}`
+* `https://tuf.{base_hostname}`
 
-
-Many options exist: https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/
+The following steps will take you through the installation and configuration of RHTAS on RHEL.
+// Many options exist: https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/
 
 == Install Trusted Artifact Signer
+
+=== Setup Environment Variables
+
+In the bastion server terminal, copy and paste this into the terminal and press kbd:[ENTER] to run the command:
+
+[source,bash, role="execute"]
+----
+export BASE_HOSTNAME={base_hostname}
+export KEYCLOAK_REALM=trusted-artifact-signer
+export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
+export TUF_URL=https://tuf.$BASE_HOSTNAME
+export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
+export COSIGN_FULCIO_URL=https://fulcio.$BASE_HOSTNAME
+export COSIGN_REKOR_URL=https://rekor.$BASE_HOSTNAME
+export COSIGN_MIRROR=$TUF_URL
+export COSIGN_ROOT=$TUF_URL/root.json
+export COSIGN_OIDC_CLIENT_ID=$KEYCLOAK_REALM
+export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_YES="true"
+export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
+export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
+export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
+export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+export CLI_SERVER_URL=https://cli-server.$BASE_HOSTNAME
+
+----
+
+Next, run these two commands, replacing the username and password or service account token with your own (don't just copy-paste, you'll need to replace the placeholders with your own values):
+
+[source,bash]
+----
+export REGISTRY_USERNAME=<your username>
+export REGISTRY_PASSWORD=<your password or service account token>
+----
+
+=== Create certificates (Temporary solution)
+
+In the same terminal, copy and paste this into the terminal and press kbd:[Enter] to run the command:
+
+[source,bash, role="execute"]
+----
+TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" && \
+cd $TMPDIR && \
+sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.${BASE_HOSTNAME}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
+sudo cat cert-00.pem cert-01.pem > /home/lab-user/server.pem && \
+sudo cat cert-02.pem > /home/lab-user/root.pem && \
+sudo cp /etc/letsencrypt/live/rhtpa.${BASE_HOSTNAME}/privkey.pem /home/lab-user && \
+sudo chown lab-user /home/lab-user/*.pem && \
+sudo chmod 660 /home/lab-user/*.pem && \
+cd /home/lab-user &&
+sudo rm -rf $TMPDIR
+----
+
+=== Create Ansible Playbook
+[source,bash, role="execute"]
+----
+cat << EOF > ~/rhtas-vars.yml
+EOF
+----
+
+=== Create Inventory File
+
+[source,bash, role="execute"]
+----
+cat << EOF > ~/inventory 
+[rhtas]
+rhtas
+
+[rhtpa]
+rhtpa
+
+[all:vars]
+ansible_user=lab-user
+EOF
+----
+
+=== Run Playbook to install RHTAS
+
+[source,bash, role="execute"]
+----
+cd ~ && \
+ansible-navigator -m stdout --eei=localhost/ansible_ee --pp=missing run install_rhtas.yml --pae=false -i inventory
+EOF
+----
 
 == Verify Trusted Artifact Signer installation
 
@@ -40,94 +125,77 @@ After installation and configuration, you can verify that Red Hat Trusted Artifa
 
 `cosign` allows you to sign and verify Open Container Initiative (OCI) container images using RHTAS.
 
-==== Download and Install Cosign
-
-. Download the cosign binary from the CLI server web page:
+. Download the cosign binary from the CLI server:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
-# Navigate to the CLI server (replace with your actual hostname)
-# Example: https://cli-server.example.com
+curl -L $CLI_SERVER_URL/clients/linux/cosign-amd64.gz | gunzip > cosign 
+sudo chmod +x cosign && sudo mv cosign /usr/local/bin/cosign
 ----
 
-. Decompress and install the cosign binary:
+. Initialize cosign:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
-gunzip cosign-amd64.gz
-chmod +x cosign-amd64
-sudo mv cosign-amd64 /usr/local/bin/cosign
-----
-
-==== Configure Environment Variables
-
-Set up your shell environment for container image signing and verification:
-
-[source,bash]
-----
-export BASE_HOSTNAME=BASE_HOSTNAME_OF_RHTAS_SERVICE
-export TUF_URL="https://tuf.${BASE_HOSTNAME}"
-export OIDC_ISSUER_URL=OIDC_ISSUER_URL
-export COSIGN_FULCIO_URL="https://fulcio.${BASE_HOSTNAME}"
-export COSIGN_REKOR_URL="https://rekor.${BASE_HOSTNAME}"
-export COSIGN_MIRROR=$TUF_URL
-export COSIGN_ROOT=$TUF_URL/root.json
-export COSIGN_OIDC_CLIENT_ID="trusted-artifact-signer"
-export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
-export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
-export COSIGN_YES="true"
-export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
-export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
-export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
-export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+curl -LO $COSIGN_ROOT 
+cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1)
 ----
 
-Replace `BASE_HOSTNAME_OF_RHTAS_SERVICE` with your RHTAS service hostname and `OIDC_ISSUER_URL` with your OpenID Connect provider URL.
-
-==== Create and Sign a Test Image
-
-. Initialize The Update Framework (TUF) system:
+. Create an artifact to sign:
 +
-[source,bash]
-----
-cosign initialize
-----
-
-. Create and push a test container image:
-+
-[source,bash]
+[source,bash,role="execute"]
 ----
 echo "FROM scratch" > ./tmp.Dockerfile
 podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image:1h
-podman push ttl.sh/rhtas/test-image:1h
+rm ./tmp.Dockerfile
 ----
 
 . Sign the container image:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
 cosign sign -y ttl.sh/rhtas/test-image:1h
 ----
-
-A web browser will open for authentication. Sign with your email address.
-
-. Clean up the temporary file:
-+
-[source,bash]
-----
-rm ./tmp.Dockerfile
-----
-
-==== Verify the Signed Image
+A web browser opens allowing you to sign the container image with an email address.
 
 . Verify the signed container image:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
 cosign verify --certificate-identity=jdoe@redhat.com ttl.sh/rhtas/test-image:1h
 ----
 
-Replace `jdoe@redhat.com` with your actual signing email address.
+Now lets query the transparency log by using the Rekor command-line interface.
+
+. Download the rekor-cli binary from the CLI server:
++
+[source,bash,role="execute"]
+----
+curl -L $CLI_SERVER_URL/clients/linux/rekor-cli-amd64.gz | gunzip > rekor-cli 
+sudo chmod +x rekor-cli && sudo mv rekor-cli /usr/local/bin/rekor-cli
+----
+
+. Search by log index:
++
+[source,bash,role="execute"]
+----
+rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
+----
+
+. Search for an email address to get the universal unique identifier (UUID):
++
+[source,bash,role="execute"]
+----
+rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq
+----
+This command returns the UUID for use with the next step.
+
+. Get transaction details by UUID:
++
+[source,bash,role="execute"]
+----
+rekor-cli get --uuid $UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
+----
 
 === Method 2: Git Commit Signing and Verification with Gitsign
 
@@ -135,29 +203,19 @@ Gitsign enables signing and verification of Git repository commits using RHTAS.
 
 ==== Download and Install Gitsign
 
-. Download the gitsign binary from the CLI server web page
-. Decompress and install:
+. Download the gitsign binary from the CLI server web page:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
-gunzip gitsign-amd64.gz
-chmod +x gitsign-amd64
-sudo mv gitsign-amd64 /usr/local/bin/gitsign
+curl -L $CLI_SERVER_URL/clients/linux/gitsign-amd64.gz | gunzip > gitsign 
+sudo chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
 ----
-
-==== Configure Git Repository
-
-. Navigate to your local Git repository:
+. Make a temporary Git repositoriy and configure Git to use gitsign for commit signing:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
-cd /path/to/your/git/repository
-----
-
-. Configure Git to use gitsign for commit signing:
-+
-[source,bash]
-----
+mkdir -p ~/tmp-git-repo && cd ~/tmp-git-repo
+git init
 git config --local commit.gpgsign true
 git config --local tag.gpgsign true
 git config --local gpg.x509.program gitsign
@@ -168,46 +226,39 @@ git config --local gitsign.issuer $SIGSTORE_OIDC_ISSUER
 git config --local gitsign.clientID trusted-artifact-signer
 ----
 
-==== Sign and Verify Git Commit
-
-. Make a test commit:
+. Make a test commit and sign it:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
 git commit --allow-empty -S -m "Test of a signed commit"
 ----
-
-A web browser will open for authentication.
++
+A web browser will open for authentication. Copy the code from the web browser into the terminal to complete the commit process and sign the commit.
 
 . Verify the commit:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
 gitsign verify --certificate-identity=jdoe@redhat.com --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
 ----
 
 === Method 3: Policy Validation with Conforma (Enterprise Contract)
 
-Conforma (formerly Enterprise Contract) validates container images against security policies.
+Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the ec binary to verify the attestation and signature of container images that use Red Hat's Trusted Artifact Signer (RHTAS) signing framework.
 
-==== Download and Install Conforma
-
-. Download the ec binary from the CLI server web page
-. Decompress and install:
+. Download the ec binary from the CLI server:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
-gunzip ec-amd64.gz
-chmod +x ec-amd64
-sudo mv ec-amd64 /usr/local/bin/ec
+curl -L $CLI_SERVER_URL/clients/linux/ec-amd64.gz | gunzip > ec-amd64 
+sudo chmod +x ec-amd64 && sudo mv ec-amd64 /usr/local/bin/ec
 ----
 
-==== Create and Attest Test Image
-
-. Create a predicate.json file for SLSA provenance:
+. Create a `predicate.json` file for SLSA provenance (Refer to the https://slsa.dev/spec/v1.0/provenance[SLSA provenance predicate specifications^] for more information about the schema layout):
 +
-[source,json]
+[source,bash,role="execute"]
 ----
+cat << EOF > ~/predicate.json
 {
   "builder": {
     "id": "https://localhost/dummy-id"
@@ -225,59 +276,31 @@ sudo mv ec-amd64 /usr/local/bin/ec
   },
   "materials": []
 }
+EOF
 ----
 
-. Attach the predicate to your test image:
+. Attach the `predicate.json` file to the test image:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
-cosign attest -y --predicate ./predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h
+cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h
 ----
 
-. Verify the image has attestations and signatures:
+. Verify the image has at leat one attestation and signature:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
 cosign tree ttl.sh/rhtas/test-image:1h
 ----
 
-==== Validate with Conforma
-
 . Run policy validation:
 +
-[source,bash]
+[source,bash,role="execute"]
 ----
 ec validate image --image ttl.sh/rhtas/test-image:1h --certificate-identity-regexp 'jdoe@example.com' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes
 ----
 
-This will generate a pass-fail report with security validation details.
-
-=== Additional Verification Tools
-
-==== Rekor CLI for Transparency Log Queries
-
-. Download and install rekor-cli:
-+
-[source,bash]
-----
-gunzip rekor-cli-amd64.gz
-chmod +x rekor-cli-amd64
-sudo mv rekor-cli-amd64 /usr/local/bin/rekor-cli
-----
-
-. Query the transparency log:
-+
-[source,bash]
-----
-# Search by log index
-rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
-
-# Search by email address
-rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq
-
-# Get transaction details by UUID
-rekor-cli get --uuid UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
-----
+Enterprise Contract generates a pass-fail report with details on any security violations. When you add the `--info` flag, the report includes more details and possible solutions for any violations found.
 
 === Verification Checklist
 
@@ -301,9 +324,10 @@ If all verification steps complete successfully, your RHTAS installation is work
 == Next Steps
 
 With Red Hat Trusted Artifact Signer installed and configured, you can now:
+
 * Sign software artifacts
 * Verify artifact integrity
 * Integrate with your CI/CD pipelines
 * Configure policy-based signing workflows
 
-For more advanced configuration options, refer to the official Red Hat Trusted Artifact Signer documentation.
+For more advanced configuration options, refer to the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer[official Red Hat Trusted Artifact Signer documentation^].
