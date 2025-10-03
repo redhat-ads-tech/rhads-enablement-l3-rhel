@@ -141,7 +141,8 @@
     "fulcio",
     "SLSA",
     "slsaprovenance",
-    "rpms"
+    "rpms",
+    "firewalld"
   ],
   "ignoreWords": [
     "sysout",
