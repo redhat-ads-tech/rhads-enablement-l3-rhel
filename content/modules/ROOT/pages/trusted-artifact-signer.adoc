@@ -4,9 +4,20 @@ Red Hat Trusted Artifact Signer is a comprehensive solution for signing and veri
 
 == Overview
 
-The RHTAS service is the downstream redistribution of the https://sigstore.dev/[Sigstore project^]. The automation contained in https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs[the Ansible collection you will use^] will install and configure the components of RHTAS to run on a single RHEL server, which uses a standalone containerized deployment. A Kubernetes-based manifest creates Kubernetes manifests for the containers and are deployed using `podman kube play`.
+The RHTAS service is the downstream redistribution of the https://sigstore.dev/[Sigstore project^].
 
-The RHTAS Ansible collection deploys the following RHTAS components:
+Although you _could_ independently install and configure the components of RHTAS, Red Hat *strongly* recommends using the supported Ansible collection to ensure you are using the latest version of the products and to leverage the latest features and bug fixes, and configure the many components of RHTAS in a consistent, secure, and repeatable manner. Much like Operators in Kubernetes, Ansible Automation provides an easy way to both install and do ongoing management of RHTAS. It can also be used in production environments using the same process you'll go through in this workshop.
+
+The automation contained in https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs[the Ansible collection you will use^] will install and configure the components of RHTAS to run on a single RHEL server, which uses a standalone containerized deployment. A Kubernetes-based manifest creates Kubernetes manifests for the containers and are deployed using `podman kube play`. This playbook will give you a basic signing framework, and enable various day-1 and day-2 operations using it going forward. Specifically, the playbook supports:
+
+* *Installation* of RHTAS on a single RHEL node
+* *Backup/Restore of TAS signing data* (protects the signing data of your software supply chain, critical when there is data loss due to hardware failure or accidental data deletion.)
+* *Refreshing TUF metadata* (helping to maintain a secure coding environment for developers and prevent mix-and-match attacks on a code base).
+* *Certificate and key rotation* for Rekor, Certificate Transparency, Fulcio, and Timestamp Authority services (rotating these keys regularly can help prevent key tampering and theft.)
+
+=== Components of RHTAS
+
+The RHTAS Ansible collection deploys the following RHTAS components onto the `rhtas` machine:
 
 * https://github.com/sigstore/rekor[Rekor^] - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.
 ** Trillian database - A Merkle tree–backed data store that underpins Rekor’s transparency log.
@@ -15,28 +26,26 @@ The RHTAS Ansible collection deploys the following RHTAS components:
 * Certificate Log - A transparency log that records issued certificates for auditability and trust verification.
 * Timestamp Authority - A service that provides trusted cryptographic timestamps to prove when data or signatures existed.
 * The Update Framework (TUF) server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
+* An https://www.nginx.com/[NGINX^] front end places an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establishing secure communications to the following hosts:
++
+** `https://cli-server.{base_hostname}`
+** `https://fulcio.{base_hostname}`
+** `https://rekor.{base_hostname}`
+** `https://rekor-search.{base_hostname}`
+** `https://tsa.{base_hostname}`
+** `https://tuf.{base_hostname}`
 
-An https://www.nginx.com/[NGINX^] front end places an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establishing secure communications.
+Each RHTAS release is associated with and installs specific versions of the above components. For more detail on these dependencies, visit the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer/1.2/html/release_notes/appendix_a_red_hat_trusted_artifact_signer_release_notes[Red Hat Trusted Artifact Signer Release Notes^].
 
-This automation also deploys and configures a software load balancer as a central point of ingress. The ingress host names are as follows, where `<base_hostname>` is your deployment's base hostname (for your environment, it will be set to `{base_hostname}`):
-
-* `https://cli-server.{base_hostname}`
-* `https://fulcio.{base_hostname}`
-* `https://rekor.{base_hostname}`
-* `https://rekor-search.{base_hostname}`
-* `https://tsa.{base_hostname}`
-* `https://tuf.{base_hostname}`
-
-The following steps will take you through the installation and configuration of RHTAS on RHEL.
-// Many options exist: https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/
+The following steps will take you through the installation and configuration of RHTAS on RHEL. Not all configuration possibilities are covered in this module, but you can find more information in the https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/[RHTAS Ansible collection documentation^].
 
 == Install Trusted Artifact Signer
 
 === Setup Environment Variables
 
-In the bastion server terminal, copy and paste this into the terminal and press kbd:[ENTER] to run the command:
-
-[source,bash, role="execute"]
+. Copy and paste (you can click the small icon to the right of the command to copy, and then kbd:[CTRL-V] or kbd:[CMD-V] on MacOS to paste) into the terminal and press kbd:[ENTER] to run the command and assign the necessary environment variables:
++
+[source,bash,role="execute", subs="+attributes"]
 ----
 export BASE_HOSTNAME={base_hostname}
 export KEYCLOAK_REALM=trusted-artifact-signer
@@ -56,44 +65,155 @@ export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
 export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
 export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
 export CLI_SERVER_URL=https://cli-server.$BASE_HOSTNAME
-
 ----
++
+These environment variables define the various endpoints and configuration for the RHTAS service, and are read from the CLI commands you'll run later in the module.
 
-Next, run these two commands, replacing the username and password or service account token with your own (don't just copy-paste, you'll need to replace the placeholders with your own values):
-
+. Next, run these two commands, replacing the username and password or service account token with your own (don't just copy-paste, you'll need to replace the placeholders with your own values):
++
 [source,bash]
 ----
-export REGISTRY_USERNAME=<your username>
-export REGISTRY_PASSWORD=<your password or service account token>
+export REGISTRY_USERNAME='<your username>'
+export REGISTRY_PASSWORD='<your password or service account token>'
 ----
+
+. To verify that your credentials are correct, attempt to login to the registry using `podman login`:
++
+[source,bash, role="execute"]
+----
+podman login registry.redhat.io -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"
+----
++
+You should see `Login Succeeded!` indicating that you are logged in. If you get an error, confirm that your credentials are correct and that you have the correct permissions to access the registry.
 
 === Create certificates (Temporary solution)
 
-In the same terminal, copy and paste this into the terminal and press kbd:[Enter] to run the command:
-
-[source,bash, role="execute"]
+. In the same terminal, copy and paste this into the terminal and press kbd:[Enter] to run the command:
++
+[source,bash, role="execute", subs="+attributes"]
 ----
 TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" && \
 cd $TMPDIR && \
-sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.${BASE_HOSTNAME}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
+sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
 sudo cat cert-00.pem cert-01.pem > /home/lab-user/server.pem && \
 sudo cat cert-02.pem > /home/lab-user/root.pem && \
-sudo cp /etc/letsencrypt/live/rhtpa.${BASE_HOSTNAME}/privkey.pem /home/lab-user && \
+sudo cp /etc/letsencrypt/live/rhtpa.{base_hostname}/privkey.pem /home/lab-user && \
 sudo chown lab-user /home/lab-user/*.pem && \
 sudo chmod 660 /home/lab-user/*.pem && \
 cd /home/lab-user &&
 sudo rm -rf $TMPDIR
 ----
++
+This command creates a temporary directory, splits the certificate into two files, and copies the certificate and private key to the `lab-user` home directory.
+
+=== Create Ansible Variables
+
+. Create the Ansible variables file which will be used by the playbook when installing RHTAS.
++
+[source,bash, role="execute", subs="+attributes"]
+----
+cat << EOF > ~/rhtas_vars.yml
+# Hostname
+tas_single_node_base_hostname: "{base_hostname}" # <1>
+
+# Registry Configurations
+tas_single_node_registry_username: "$REGISTRY_USERNAME"
+tas_single_node_registry_password: "$REGISTRY_PASSWORD"
+
+# Certificates <2>
+tas_ingress_certificate_root_ca_file: "/home/lab-user/root.pem" 
+tas_ingress_certificate_root_key_file: "/home/lab-user/privkey.pem" 
+tas_ingress_certificate_cert_file: "/home/lab-user/server.pem"
+tas_ingress_certificate_key_file: "/home/lab-user/privkey.pem"
+
+
+# OIDC Configuration # <3>
+tas_single_node_oidc_issuer: "$OIDC_ISSUER_URL"
+tas_single_node_oidc_client_id: "$KEYCLOAK_REALM"
+
+# Fulcio OIDC Configuration
+tas_single_node_fulcio:
+  fulcio_config:
+    oidc_issuers:
+      - issuer: "{{ tas_single_node_oidc_issuer }}"
+        client_id: "{{ tas_single_node_oidc_client_id }}"
+        url: "{{ tas_single_node_oidc_issuer }}"
+        type: email
+
+# Ingress TLS Certificates
+tas_single_node_ingress_certificates:
+  root:
+    ca_certificate: |
+      {{ lookup('file', tas_ingress_certificate_root_ca_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_root_key_file) }}
+  fulcio:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  rekor:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  tuf:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  tsa:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  rekor-search:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  cli-server:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+
+# System Packages
+tas_single_node_system_packages:
+  - podman
+  - firewalld
+EOF
+----
+<1> The base host name of the managed node. This generates self-signed certificates for the individual HTTPS endpoints.
+<2> Note that these certificates are signed by a legitimate certificate authority. They are not "self-signed".
+<3> This uses the pre-installed Keycloak instance as the OpenID Connect provider.
 
 === Create Ansible Playbook
+
+. Create the Ansible playbook which is the main entry point for installation.
++
 [source,bash, role="execute"]
 ----
-cat << EOF > ~/rhtas-vars.yml
+cat << EOF > ~/install_rhtas.yml
+---
+- name: Install RHTAS
+  hosts: rhtas
+  become: true
+  tasks:
+    - name: Include Vars
+      ansible.builtin.include_vars:
+        file: rhtas-vars.yml
+    - name: Call tas_single_node role
+      ansible.builtin.include_role:
+        name: redhat.artifact_signer.tas_single_node
+...
 EOF
 ----
 
 === Create Inventory File
 
+. Create the inventory file which defines the hostnames of the managed nodes. We'll use the `rhtas` hostname for this exercise, and `rhtpa` for a later exercise.
++
 [source,bash, role="execute"]
 ----
 cat << EOF > ~/inventory 
@@ -110,16 +230,33 @@ EOF
 
 === Run Playbook to install RHTAS
 
+. Run the following command to install RHTAS.
++
 [source,bash, role="execute"]
 ----
 cd ~ && \
-ansible-navigator -m stdout --eei=localhost/ansible_ee --pp=missing run install_rhtas.yml --pae=false -i inventory
+ansible-navigator \ # <1>
+  -m stdout \ # <2>
+  --eei=localhost/ansible_ee \ # <3>
+  --pp=missing \ # <4>
+  run install_rhtas.yml \ # <5>
+  --pae=false \ # <6>
+  -i inventory # <7>
 EOF
 ----
+<1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do).
+<2> Displays the output of the playbook in the terminal.
+<3> The specific execution environment in which the playbook runs and contains the required Ansible Collections for the products.
+<4> Only pull the execution environment if not already present locally (which it is))
+<5> The playbook to run.
+<6> Don't create playbook artifacts (like JSON log files)
+<7> The inventory file to use
++
+The installation will take a few minutes to complete. Wait for it to finish before moving on!
 
 == Verify Trusted Artifact Signer installation
 
-After installation and configuration, you can verify that Red Hat Trusted Artifact Signer (RHTAS) is working correctly by signing and verifying test artifacts. This section covers signing and verifying test artifacts using the following methods: Cosign for container images, Gitsign for Git commits, and Conforma (Enterprise Contract) for policy validation.
+After installation and configuration, you can verify that Red Hat Trusted Artifact Signer (RHTAS) is working correctly by signing and verifying test artifacts. This section covers signing and verifying test artifacts using the following methods: *Cosign* for container images, *Gitsign* for Git commits, and *Conforma (formerly known as Enterprise Contract)* for policy validation. You can use any or all of these methods in your own CI pipelines to sign and verify artifacts before they are deployed to production.
 
 === Method 1: Container Image Signing and Verification with `cosign`
 
@@ -132,16 +269,23 @@ After installation and configuration, you can verify that Red Hat Trusted Artifa
 curl -L $CLI_SERVER_URL/clients/linux/cosign-amd64.gz | gunzip > cosign 
 sudo chmod +x cosign && sudo mv cosign /usr/local/bin/cosign
 ----
++
+[NOTE]
+====
+The CLI server also has a https://cli-server.{base_hostname}[web interface^] for downloading binaries for all of the tools used with RHTAS for various platforms. In this exercise we are using `curl` to download the binaries, but you can also use the web interface to download the binaries to your local workstation.
+====
 
 . Initialize cosign:
 +
 [source,bash,role="execute"]
 ----
-curl -LO $COSIGN_ROOT 
-cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1)
+curl -LO $COSIGN_ROOT # <1>
+cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1) # <2>
 ----
+<1> Downloads the known-good `root.json` file (containing the trusted certificate and key targets) from the local TUF server.
+<2> Initialize cosign to prepare for signing and verification later on using the known-good TUF root.
 
-. Create an artifact to sign:
+. Create a temporary container image to sign using `podman`:
 +
 [source,bash,role="execute"]
 ----
@@ -156,7 +300,8 @@ rm ./tmp.Dockerfile
 ----
 cosign sign -y ttl.sh/rhtas/test-image:1h
 ----
-A web browser opens allowing you to sign the container image with an email address.
++
+A web browser opens allowing you to sign the container image with an email address. This solution is known as https://docs.sigstore.dev/cosign/signing/overview/[keyless signing^] and is a recommended practice for signing container images, as it does not rely on long-lived certs and keys that could become compromised. A short-lived certificate is generated (from Fulcio) for each signature, attached to the artifact (container), and is only valid for the duration of the signature, and can be later verified against the Rekor transparency log.
 
 . Verify the signed container image:
 +
@@ -164,16 +309,17 @@ A web browser opens allowing you to sign the container image with an email addre
 ----
 cosign verify --certificate-identity=jdoe@redhat.com ttl.sh/rhtas/test-image:1h
 ----
++
+To verify, Cosign queries the transparency log (Rekor) to compare the public key bound to the certificate, and checks the timestamp on the signature against the artifact's entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid.
 
-Now lets query the transparency log by using the Rekor command-line interface.
-
-. Download the rekor-cli binary from the CLI server:
+. Now lets query the transparency log by using the Rekor command-line interface. Download the rekor-cli binary from the CLI server:
 +
 [source,bash,role="execute"]
 ----
 curl -L $CLI_SERVER_URL/clients/linux/rekor-cli-amd64.gz | gunzip > rekor-cli 
 sudo chmod +x rekor-cli && sudo mv rekor-cli /usr/local/bin/rekor-cli
 ----
++
 
 . Search by log index:
 +
@@ -199,7 +345,7 @@ rekor-cli get --uuid $UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
 
 === Method 2: Git Commit Signing and Verification with Gitsign
 
-Gitsign enables signing and verification of Git repository commits using RHTAS.
+Gitsign enables signing and verification of Git repository commits using RHTAS. Gitsign implements keyless signing to sign Git commits with a valid OpenID Connect identity (in this case coming from Keycloak). Signing details will then be stored in the transparency log (Rekor) for subsequent verification.
 
 ==== Download and Install Gitsign
 
@@ -210,20 +356,21 @@ Gitsign enables signing and verification of Git repository commits using RHTAS.
 curl -L $CLI_SERVER_URL/clients/linux/gitsign-amd64.gz | gunzip > gitsign 
 sudo chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
 ----
+
 . Make a temporary Git repository and configure Git to use gitsign for commit signing:
 +
 [source,bash,role="execute"]
 ----
-mkdir -p ~/tmp-git-repo && cd ~/tmp-git-repo
+rm -rf ~/tmp-git-repo && mkdir -p ~/tmp-git-repo && cd ~/tmp-git-repo
 git init
-git config --local commit.gpgsign true
-git config --local tag.gpgsign true
-git config --local gpg.x509.program gitsign
-git config --local gpg.format x509
-git config --local gitsign.fulcio $SIGSTORE_FULCIO_URL
-git config --local gitsign.rekor $SIGSTORE_REKOR_URL
-git config --local gitsign.issuer $SIGSTORE_OIDC_ISSUER
-git config --local gitsign.clientID trusted-artifact-signer
+git config --local commit.gpgsign true # sign all commits
+git config --local tag.gpgsign true # sign all tags
+git config --local gpg.x509.program gitsign # use gitsign for signing
+git config --local gpg.format x509 # use x509 format for signing
+git config --local gitsign.fulcio $SIGSTORE_FULCIO_URL # use our Fulcio instance
+git config --local gitsign.rekor $SIGSTORE_REKOR_URL # use our Rekor instance
+git config --local gitsign.issuer $SIGSTORE_OIDC_ISSUER # use our OIDC provider
+git config --local gitsign.clientID trusted-artifact-signer # OIDC client name
 ----
 
 . Make a test commit and sign it:
@@ -244,7 +391,7 @@ gitsign verify --certificate-identity=jdoe@redhat.com --certificate-oidc-issuer=
 
 === Method 3: Policy Validation with Conforma (Enterprise Contract)
 
-Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the ec binary to verify the attestation and signature of container images that use Red Hat's Trusted Artifact Signer (RHTAS) signing framework.
+Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the `ec` binary to verify the attestation(verifiable claims about any aspect of how a piece of software is produced) and signature of container images that use Red Hat's Trusted Artifact Signer (RHTAS) signing framework. This is typically used in CI pipelines during container image promotion and deployment. Conforma policies are defined using the https://www.openpolicyagent.org/docs/policy-language[rego policy language^]. 
 
 . Download the ec binary from the CLI server:
 +
@@ -293,31 +440,14 @@ cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas
 cosign tree ttl.sh/rhtas/test-image:1h
 ----
 
-. Run policy validation:
+. https://conforma.dev/docs/cli/ec_validate_image.html[Validate conformance^] of container images with the provided policies:
 +
 [source,bash,role="execute"]
 ----
 ec validate image --image ttl.sh/rhtas/test-image:1h --certificate-identity-regexp 'jdoe@example.com' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes
 ----
 
-Enterprise Contract generates a pass-fail report with details on any security violations. When you add the `--info` flag, the report includes more details and possible solutions for any violations found.
-
-=== Verification Checklist
-
-Use this checklist to ensure your RHTAS installation is working correctly:
-
-- [ ] Cosign binary downloaded and installed
-- [ ] Environment variables configured correctly
-- [ ] TUF system initialized successfully
-- [ ] Test container image created and signed
-- [ ] Container image signature verified
-- [ ] Gitsign binary downloaded and installed
-- [ ] Git repository configured for signing
-- [ ] Test commit signed and verified
-- [ ] Conforma binary downloaded and installed
-- [ ] SLSA provenance attestation created
-- [ ] Policy validation completed successfully
-- [ ] Rekor transparency log accessible
+Conforma generates a pass-fail report with details on any security violations. When you add the `--info` flag, the report includes more details and possible solutions for any violations found.
 
 If all verification steps complete successfully, your RHTAS installation is working correctly and ready for production use.
 
@@ -330,4 +460,8 @@ With Red Hat Trusted Artifact Signer installed and configured, you can now:
 * Integrate with your CI/CD pipelines
 * Configure policy-based signing workflows
 
-For more advanced configuration options, refer to the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer[official Red Hat Trusted Artifact Signer documentation^].
+=== CI/CD Integration with RHADS Components
+
+RHTAS integrates seamlessly with other Red Hat Advanced Developer Suite components to create comprehensive CI/CD workflows. For example, you can use Red Hat Developer Hub templates to create project scaffolds that automatically include container image signing via `cosign` and Git commit signing via `gitsign` in their CI pipelines. Using Conforma's policy validation, you can enforce security gates that verify artifact signatures and attestations before promoting images to production environments. This creates a cohesive developer experience where all artifacts are cryptographically signed, provenance is tracked through SLSA attestations, and policies ensure compliance before deployment.
+
+For more advanced configuration options and day-2 operation capabilities on RHEL, refer to the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer[official Red Hat Trusted Artifact Signer documentation^].
