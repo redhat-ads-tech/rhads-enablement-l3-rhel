@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Installing and Configuring Red Hat Trusted Artifact Signer on RHEL :: Red Hat Advanced Developer Suite Enablement L3 RHEL</title>
+    <link rel="canonical" href="https://redhat-ads-tech.github.io/rhads-enablement-l3-rhel/modules/trusted-artifact-signer.html">
+    <link rel="prev" href="environment-setup.html">
+    <link rel="next" href="trusted-profile-analyzer.html">
+    <meta name="generator" content="Antora 3.1.14">
+    <link rel="stylesheet" href="../_/css/site.css">
+<link rel="icon" href="../_/img/favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://demo.redhat.com" target="_blank" style="margin-left: 5%;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1508.5 178.739" style="width: 278px;"><g fill="#fff"><path d="M316.6 63.2v-56H342a21.279 21.279 0 0 1 7.8 1.3 18.111 18.111 0 0 1 5.9 3.5 15.577 15.577 0 0 1 5 11.8 15.051 15.051 0 0 1-3.1 9.5 16.836 16.836 0 0 1-8.4 5.8l12.5 24.1h-9.3l-11.6-23H325v23Zm24.7-48.6H325v18.7h16.3q5.25 0 8.1-2.7a8.7 8.7 0 0 0 2.8-6.6 8.7 8.7 0 0 0-2.8-6.6c-1.8-1.9-4.5-2.8-8.1-2.8ZM364.1 42.8a20.674 20.674 0 0 1 1.6-8.2 20.288 20.288 0 0 1 4.3-6.7 19.92 19.92 0 0 1 6.5-4.5 19.718 19.718 0 0 1 8-1.6 18.463 18.463 0 0 1 7.8 1.6 18.677 18.677 0 0 1 6.2 4.5 20.927 20.927 0 0 1 4.1 6.8 23.2 23.2 0 0 1 1.5 8.4v2.3H372a13.822 13.822 0 0 0 4.6 8.4 13.6 13.6 0 0 0 9.1 3.3 15.553 15.553 0 0 0 5.7-1 12.858 12.858 0 0 0 4.6-2.6l5.1 5a25.983 25.983 0 0 1-7.4 4.1 24.69 24.69 0 0 1-8.4 1.3 21.306 21.306 0 0 1-8.4-1.6 22.763 22.763 0 0 1-6.8-4.4 20.788 20.788 0 0 1-4.5-6.7 23.2 23.2 0 0 1-1.5-8.4Zm20.2-14.2a11.527 11.527 0 0 0-8 3 13.046 13.046 0 0 0-4.2 7.8h24.2a13.091 13.091 0 0 0-4.2-7.8 11.106 11.106 0 0 0-7.8-3ZM443.1 63.2v-3.8a19.448 19.448 0 0 1-5.8 3.3 18.924 18.924 0 0 1-6.7 1.2 19.824 19.824 0 0 1-14.6-6.1 22.268 22.268 0 0 1-4.4-6.7 21.812 21.812 0 0 1 0-16.4A20.534 20.534 0 0 1 416 28a19.335 19.335 0 0 1 6.6-4.5 20.334 20.334 0 0 1 8.2-1.6 20.7 20.7 0 0 1 6.6 1 19.415 19.415 0 0 1 5.7 3V7.2l8-1.8v57.8Zm-25.2-20.4a13.718 13.718 0 0 0 4 10.1 13.45 13.45 0 0 0 9.8 4.1 14.956 14.956 0 0 0 6.4-1.3 15.954 15.954 0 0 0 4.9-3.6V33.6a14.988 14.988 0 0 0-4.9-3.5 15.271 15.271 0 0 0-6.4-1.3 13.423 13.423 0 0 0-9.9 4 13.806 13.806 0 0 0-3.9 10ZM478.1 63.2v-56h8.4v24h29.8v-24h8.4v56h-8.4V38.8h-29.8v24.4ZM547.2 64a16.483 16.483 0 0 1-10.8-3.5 11.037 11.037 0 0 1-4.2-8.9 10.375 10.375 0 0 1 4.7-9.2 20.76 20.76 0 0 1 11.8-3.2 27.841 27.841 0 0 1 5.8.6 27.374 27.374 0 0 1 5.3 1.6v-4.3a8.143 8.143 0 0 0-2.6-6.5 11.452 11.452 0 0 0-7.4-2.2 20.788 20.788 0 0 0-6 .9 34.616 34.616 0 0 0-6.6 2.6l-3-6a54.169 54.169 0 0 1 8.4-3.1 33.18 33.18 0 0 1 8.3-1.1c5.2 0 9.3 1.3 12.2 3.8s4.4 6.1 4.4 10.8v27h-7.8v-3.5a19.441 19.441 0 0 1-5.8 3.2 23.54 23.54 0 0 1-6.7 1Zm-7.3-12.6a5.646 5.646 0 0 0 2.6 4.8 11.193 11.193 0 0 0 6.6 1.8 16.256 16.256 0 0 0 5.9-1 14.449 14.449 0 0 0 4.9-2.9V47a19.778 19.778 0 0 0-4.8-1.8 24.933 24.933 0 0 0-5.7-.6 11.859 11.859 0 0 0-6.8 1.8 5.728 5.728 0 0 0-2.7 5ZM580.6 53.2v-24H572v-6.7h8.6V12.1l7.9-1.9v12.3h12v6.7h-12v22.1a5.94 5.94 0 0 0 1.4 4.4c.9.9 2.5 1.3 4.6 1.3a23.637 23.637 0 0 0 3-.2 10.857 10.857 0 0 0 2.8-.8v6.7a19.28 19.28 0 0 1-3.8.9 27.484 27.484 0 0 1-3.8.3c-3.9 0-7-.9-9-2.8-2-1.7-3.1-4.4-3.1-7.9Z"></path></g><path d="M127 90.2c12.5 0 30.6-2.6 30.6-17.5a12.678 12.678 0 0 0-.3-3.4L149.8 37c-1.7-7.1-3.2-10.3-15.7-16.6-9.7-5-30.8-13.1-37.1-13.1-5.8 0-7.5 7.5-14.4 7.5-6.7 0-11.6-5.6-17.9-5.6-6 0-9.9 4.1-12.9 12.5 0 0-8.4 23.7-9.5 27.2a4.216 4.216 0 0 0-.3 1.9c0 9.2 36.3 39.4 85 39.4Zm32.5-11.4c1.7 8.2 1.7 9.1 1.7 10.1 0 14-15.7 21.8-36.4 21.8-46.8 0-87.7-27.4-87.7-45.5a17.535 17.535 0 0 1 1.5-7.3C21.8 58.8 0 61.8 0 81c0 31.5 74.6 70.3 133.7 70.3 45.3 0 56.7-20.5 56.7-36.6-.1-12.8-11-27.3-30.9-35.9Z" fill="#e00"></path><path d="M159.5 78.8c1.7 8.2 1.7 9.1 1.7 10.1 0 14-15.7 21.8-36.4 21.8-46.8 0-87.7-27.4-87.7-45.5a17.535 17.535 0 0 1 1.5-7.3l3.7-9.1a4.877 4.877 0 0 0-.3 2c0 9.2 36.3 39.4 85 39.4 12.5 0 30.6-2.6 30.6-17.5a12.678 12.678 0 0 0-.3-3.4Z"></path><path d="M253.5 158.7a2.22 2.22 0 0 1-2.2-2.2V2.2a2.2 2.2 0 0 1 4.4 0v154.2a2.242 2.242 0 0 1-2.2 2.3Z" fill="#fff"></path><text data-name="Demo Platform" transform="translate(1186 149)" fill="#fff" font-size="82" font-family="'RedHatDisplay', 'Overpass', overpass, helvetica, arial, sans-serif" font-weight="700"><tspan x="-877.892" y="0">Demo Platform</tspan></text></svg>
+      </a>
+      <a class="navbar-item site-title" target="__blank" style="color: #fff !important;" href="https://redhat-ads-tech.github.io/rhads-enablement-l3-rhel">Red Hat Advanced Developer Suite Enablement L3 RHEL</a>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <div class="navbar-item navbar-item-right-dropdown has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Links</a>
+          <div class="navbar-dropdown navbar-dropdown-right">
+            <a class="navbar-item navbar-item-right-content" href="https://redhat.com" target="_blank">Red Hat</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="modules" data-version="master">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html" class=" query-params-link">Red Hat Advanced Developer Suite Enablement L3 RHEL</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="environment-setup.html">Environment Setup</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="trusted-artifact-signer.html">1. Installing and Configuring Red Hat Trusted Artifact Signer on RHEL</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="#prerequisites">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="#installation">Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="#configuration">Configuration</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="trusted-profile-analyzer.html">2. Installing and Configuring Red Hat Trusted Profile Analyzer on RHEL</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="trusted-profile-analyzer.html#prerequisites">Prerequisites</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="trusted-profile-analyzer.html#installation">Installation</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="trusted-profile-analyzer.html#configuration">Configuration</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Dev Mode</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="openshift-icons.html">openshift-icons</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="attrs-page.html">Attributes Page</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <span class="title">Red Hat Advanced Developer Suite Enablement L3 RHEL</span>
+      <ul class="versions">
+        <li class="version is-current">
+          <a href="index.html">master</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Red Hat Advanced Developer Suite Enablement L3 RHEL</a></li>
+    <li><a href="trusted-artifact-signer.html">1. Installing and Configuring Red Hat Trusted Artifact Signer on RHEL</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<article class="doc">
+<h1 class="page">Installing and Configuring Red Hat Trusted Artifact Signer on RHEL</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Red Hat Trusted Artifact Signer is a comprehensive solution for signing and verifying software artifacts to ensure their integrity and authenticity. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The RHTAS service is the downstream redistribution of the <a href="https://sigstore.dev/" target="_blank" rel="noopener">Sigstore project</a>.</p>
+</div>
+<div class="paragraph">
+<p>Although you <em>could</em> independently install and configure the components of RHTAS, Red Hat <strong>strongly</strong> recommends using the supported Ansible collection to ensure you are using the latest version of the products and to leverage the latest features and bug fixes, and configure the many components of RHTAS in a consistent, secure, and repeatable manner. Much like Operators in Kubernetes, Ansible Automation provides an easy way to both install and do ongoing management of RHTAS. It can also be used in production environments using the same process you&#8217;ll go through in this workshop.</p>
+</div>
+<div class="paragraph">
+<p>The automation contained in <a href="https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs" target="_blank" rel="noopener">the Ansible collection you will use</a> will install and configure the components of RHTAS to run on a single RHEL server, which uses a standalone containerized deployment. A Kubernetes-based manifest creates Kubernetes manifests for the containers and are deployed using <code>podman kube play</code>. This playbook will give you a basic signing framework, and enable various day-1 and day-2 operations using it going forward. Specifically, the playbook supports:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Installation</strong> of RHTAS on a single RHEL node</p>
+</li>
+<li>
+<p><strong>Backup/Restore of TAS signing data</strong> (protects the signing data of your software supply chain, critical when there is data loss due to hardware failure or accidental data deletion.)</p>
+</li>
+<li>
+<p><strong>Refreshing TUF metadata</strong> (helping to maintain a secure coding environment for developers and prevent mix-and-match attacks on a code base).</p>
+</li>
+<li>
+<p><strong>Certificate and key rotation</strong> for Rekor, Certificate Transparency, Fulcio, and Timestamp Authority services (rotating these keys regularly can help prevent key tampering and theft.)</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_components_of_rhtas"><a class="anchor" href="#_components_of_rhtas"></a>Components of RHTAS</h3>
+<div class="paragraph">
+<p>The RHTAS Ansible collection deploys the following RHTAS components onto the <code>rhtas</code> machine:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/sigstore/rekor" target="_blank" rel="noopener">Rekor</a> - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Trillian database - A Merkle tree–backed data store that underpins Rekor’s transparency log.</p>
+</li>
+<li>
+<p>Optional: A self-managed MariaDB instance (for durable SQL storage), and a Redis instance(caching and service management) (both highly recommended for production deployments to simplify operations and offload service management, including data backup and restoration).</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="https://github.com/sigstore/fulcio" target="_blank" rel="noopener">Fulcio</a> - A certificate authority that issues short-lived code-signing certificates tied to an OpenID Connect (OIDC) identity.</p>
+</li>
+<li>
+<p>Certificate Log - A transparency log that records issued certificates for auditability and trust verification.</p>
+</li>
+<li>
+<p>Timestamp Authority - A service that provides trusted cryptographic timestamps to prove when data or signatures existed.</p>
+</li>
+<li>
+<p>The Update Framework (TUF) server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.</p>
+</li>
+<li>
+<p>An <a href="https://www.nginx.com/" target="_blank" rel="noopener">NGINX</a> front end places an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establishing secure communications to the following hosts:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code><a href="https://cli-server.{base_hostname}" class="bare">https://cli-server.{base_hostname}</a></code></p>
+</li>
+<li>
+<p><code><a href="https://fulcio.{base_hostname}" class="bare">https://fulcio.{base_hostname}</a></code></p>
+</li>
+<li>
+<p><code><a href="https://rekor.{base_hostname}" class="bare">https://rekor.{base_hostname}</a></code></p>
+</li>
+<li>
+<p><code><a href="https://rekor-search.{base_hostname}" class="bare">https://rekor-search.{base_hostname}</a></code></p>
+</li>
+<li>
+<p><code><a href="https://tsa.{base_hostname}" class="bare">https://tsa.{base_hostname}</a></code></p>
+</li>
+<li>
+<p><code><a href="https://tuf.{base_hostname}" class="bare">https://tuf.{base_hostname}</a></code></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Each RHTAS release is associated with and installs specific versions of the above components. For more detail on these dependencies, visit the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer/1.2/html/release_notes/appendix_a_red_hat_trusted_artifact_signer_release_notes" target="_blank" rel="noopener">Red Hat Trusted Artifact Signer Release Notes</a>.</p>
+</div>
+<div class="paragraph">
+<p>The following steps will take you through the installation and configuration of RHTAS on RHEL. Not all configuration possibilities are covered in this module, but you can find more information in the <a href="https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs/" target="_blank" rel="noopener">RHTAS Ansible collection documentation</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_install_trusted_artifact_signer"><a class="anchor" href="#_install_trusted_artifact_signer"></a>Install Trusted Artifact Signer</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_setup_environment_variables"><a class="anchor" href="#_setup_environment_variables"></a>Setup Environment Variables</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Copy and paste (you can click the small icon to the right of the command to copy, and then <kbd>CTRL-V</kbd> or <kbd>CMD-V</kbd> on MacOS to paste) into the terminal and press <kbd>ENTER</kbd> to run the command and assign the necessary environment variables:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export GUID=my-guid
+export BASE_HOSTNAME={base_hostname}
+export KEYCLOAK_REALM=trusted-artifact-signer
+export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
+export TUF_URL=https://tuf.$BASE_HOSTNAME
+export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
+export COSIGN_FULCIO_URL=https://fulcio.$BASE_HOSTNAME
+export COSIGN_REKOR_URL=https://rekor.$BASE_HOSTNAME
+export COSIGN_MIRROR=$TUF_URL
+export COSIGN_ROOT=$TUF_URL/root.json
+export COSIGN_OIDC_CLIENT_ID=$KEYCLOAK_REALM
+export COSIGN_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_CERTIFICATE_OIDC_ISSUER=$OIDC_ISSUER_URL
+export COSIGN_YES="true"
+export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
+export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
+export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
+export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
+export CLI_SERVER_URL=https://cli-server.$BASE_HOSTNAME</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These environment variables define the various endpoints and configuration for the RHTAS service, and are read from the CLI commands you&#8217;ll run later in the module.</p>
+</div>
+</li>
+<li>
+<p>Next, run these two commands, replacing the username and password or service account token with your own (don&#8217;t just copy-paste, you&#8217;ll need to replace the placeholders with your own values):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export REGISTRY_USERNAME='&lt;your username&gt;'
+export REGISTRY_PASSWORD='&lt;your password or service account token&gt;'</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To verify that your credentials are correct, attempt to login to the registry using <code>podman login</code>:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman login registry.redhat.io -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see <code>Login Succeeded!</code> indicating that you are logged in. If you get an error, confirm that your credentials are correct and that you have the correct permissions to access the registry.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_ansible_variables"><a class="anchor" href="#_create_ansible_variables"></a>Create Ansible Variables</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create the Ansible variables file which will be used by the playbook when installing RHTAS.</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; EOF &gt; ~/rhtas_vars.yml
+# Hostname
+tas_single_node_base_hostname: "{base_hostname}" <i class="conum" data-value="1"></i><b>(1)</b>
+
+# Registry Configurations
+tas_single_node_registry_username: "$REGISTRY_USERNAME"
+tas_single_node_registry_password: "$REGISTRY_PASSWORD"
+
+# Certificates <i class="conum" data-value="2"></i><b>(2)</b>
+tas_ingress_certificate_root_ca_file: "/home/lab-user/root.pem"
+tas_ingress_certificate_root_key_file: "/home/lab-user/privkey.pem"
+tas_ingress_certificate_cert_file: "/home/lab-user/server.pem"
+tas_ingress_certificate_key_file: "/home/lab-user/privkey.pem"
+
+
+# OIDC Configuration <i class="conum" data-value="3"></i><b>(3)</b>
+tas_single_node_oidc_issuer: "$OIDC_ISSUER_URL"
+tas_single_node_oidc_client_id: "$KEYCLOAK_REALM"
+
+# Fulcio OIDC Configuration
+tas_single_node_fulcio:
+  fulcio_config:
+    oidc_issuers:
+      - issuer: "{{ tas_single_node_oidc_issuer }}"
+        client_id: "{{ tas_single_node_oidc_client_id }}"
+        url: "{{ tas_single_node_oidc_issuer }}"
+        type: email
+
+# Ingress TLS Certificates
+tas_single_node_ingress_certificates:
+  root:
+    ca_certificate: |
+      {{ lookup('file', tas_ingress_certificate_root_ca_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_root_key_file) }}
+  fulcio:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  rekor:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  tuf:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  tsa:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  rekor-search:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+  cli-server:
+    certificate: |
+      {{ lookup('file', tas_ingress_certificate_cert_file) }}
+    private_key: |
+      {{ lookup('file', tas_ingress_certificate_key_file) }}
+
+# System Packages
+tas_single_node_system_packages:
+  - podman
+  - firewalld
+EOF</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The base host name of the managed node. This generates self-signed certificates for the individual HTTPS endpoints.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Note that these certificates are signed by a legitimate certificate authority. They are not "self-signed".</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>This uses the pre-installed Keycloak instance as the OpenID Connect provider.</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_ansible_playbook"><a class="anchor" href="#_create_ansible_playbook"></a>Create Ansible Playbook</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create the Ansible playbook which is the main entry point for installation.</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; EOF &gt; ~/install_rhtas.yml
+---
+- name: Install RHTAS
+  hosts: rhtas
+  become: true
+  tasks:
+    - name: Include Vars
+      ansible.builtin.include_vars:
+        file: rhtas_vars.yml
+    - name: Call tas_single_node role
+      ansible.builtin.include_role:
+        name: redhat.artifact_signer.tas_single_node
+...
+EOF</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_inventory_file"><a class="anchor" href="#_create_inventory_file"></a>Create Inventory File</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create the inventory file which defines the hostnames of the managed nodes. We&#8217;ll use the <code>rhtas</code> hostname for this exercise, and <code>rhtpa</code> for a later exercise.</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; EOF &gt; ~/inventory
+[rhtas]
+rhtas
+
+[rhtpa]
+rhtpa
+
+[all:vars]
+ansible_user=lab-user
+EOF</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_run_playbook_to_install_rhtas"><a class="anchor" href="#_run_playbook_to_install_rhtas"></a>Run Playbook to install RHTAS</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Run the following command to install RHTAS.</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cd ~ &amp;&amp; \
+ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
+  -m stdout \<i class="conum" data-value="2"></i><b>(2)</b>
+  --eei=localhost/ansible_ee \<i class="conum" data-value="3"></i><b>(3)</b>
+  --pp=missing \<i class="conum" data-value="4"></i><b>(4)</b>
+  run install_rhtas.yml \<i class="conum" data-value="5"></i><b>(5)</b>
+  --pae=false \<i class="conum" data-value="6"></i><b>(6)</b>
+  -i inventory<i class="conum" data-value="7"></i><b>(7)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Ansible Navigator is used to enable running the playbook in the specific execution environment (which <code>ansible-playbook</code> cannot do).</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Displays the output of the playbook in the terminal.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The specific execution environment in which the playbook runs and contains the required Ansible Collections for the products.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Only pull the execution environment if not already present locally (which it is))</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The playbook to run.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>Don&#8217;t create playbook artifacts (like JSON log files)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>The inventory file to use
+<div class="paragraph">
+<p>The installation will take a few minutes to complete. Wait for it to finish before moving on!</p>
+</div></td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify_trusted_artifact_signer_installation"><a class="anchor" href="#_verify_trusted_artifact_signer_installation"></a>Verify Trusted Artifact Signer installation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After installation and configuration, you can verify that Red Hat Trusted Artifact Signer (RHTAS) is working correctly by signing and verifying test artifacts. This section covers signing and verifying test artifacts using the following methods: <strong>Cosign</strong> for container images, <strong>Gitsign</strong> for Git commits, and <strong>Conforma (formerly known as Enterprise Contract)</strong> for policy validation. You can use any or all of these methods in your own CI pipelines to sign and verify artifacts before they are deployed to production.</p>
+</div>
+<div class="sect2">
+<h3 id="_method_1_container_image_signing_and_verification_with_cosign"><a class="anchor" href="#_method_1_container_image_signing_and_verification_with_cosign"></a>Method 1: Container Image Signing and Verification with <code>cosign</code></h3>
+<div class="paragraph">
+<p><code>cosign</code> allows you to sign and verify Open Container Initiative (OCI) container images using RHTAS.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Download the cosign binary from the CLI server:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/cosign-amd64.gz | gunzip &gt; cosign
+sudo chmod +x cosign &amp;&amp; sudo mv cosign /usr/local/bin/cosign</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The CLI server also has a <a href="https://cli-server.{base_hostname}" target="_blank" rel="noopener">web interface</a> for downloading binaries for all of the tools used with RHTAS for various platforms. In this exercise we are using <code>curl</code> to download the binaries, but you can also use the web interface to download the binaries to your local workstation.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Initialize cosign:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -LO $COSIGN_ROOT <i class="conum" data-value="1"></i><b>(1)</b>
+cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1) <i class="conum" data-value="2"></i><b>(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Downloads the known-good <code>root.json</code> file (containing the trusted certificate and key targets) from the local TUF server.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Initialize cosign to prepare for signing and verification later on using the known-good TUF root.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create a container image to sign using <code>podman</code>:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "FROM scratch" &gt; ./tmp.Dockerfile
+podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:1h
+rm ./tmp.Dockerfile</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Push the image to a registry:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman push ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Sign the container image:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign sign -y ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A web browser opens allowing you to sign the container image with an email address. This solution is known as <a href="https://docs.sigstore.dev/cosign/signing/overview/" target="_blank" rel="noopener">keyless signing</a> and is a recommended practice for signing container images, as it does not rely on long-lived certs and keys that could become compromised. A short-lived certificate is generated (from Fulcio) for each signature, attached to the artifact (container), and is only valid for the duration of the signature, and can be later verified against the Rekor transparency log.</p>
+</div>
+</li>
+<li>
+<p>Verify the signed container image:</p>
+<div class="paragraph">
+<p>Based on the RHBK user that was used  to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of <code>&lt;username&gt;@redhat.com</code>. So if <code>chris</code> signed the image, the email address would be <code>chris@redhat.com</code>.</p>
+</div>
+</li>
+<li>
+<p>Set thee email address in an environment variable:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export EMAIL_ADDRESS="chris@redhat.com"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now verify the image</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign verify --certificate-identity=$EMAIL_ADDRESS ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To verify, Cosign queries the transparency log (Rekor) to compare the public key bound to the certificate, and checks the timestamp on the signature against the artifact&#8217;s entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid.</p>
+</div>
+</li>
+<li>
+<p>Now lets query the transparency log by using the Rekor command-line interface. Download the rekor-cli binary from the CLI server:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/rekor-cli-amd64.gz | gunzip &gt; rekor-cli
+sudo chmod +x rekor-cli &amp;&amp; sudo mv rekor-cli /usr/local/bin/rekor-cli</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Search by log index:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Search for an email address to get the universal unique identifier (UUID):</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli search --email $EMAIL_ADDRESS --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command returns the UUID for use with the next step.</p>
+</div>
+</li>
+<li>
+<p>Get transaction details by UUID:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli get --uuid $UUID --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_method_2_git_commit_signing_and_verification_with_gitsign"><a class="anchor" href="#_method_2_git_commit_signing_and_verification_with_gitsign"></a>Method 2: Git Commit Signing and Verification with Gitsign</h3>
+<div class="paragraph">
+<p>Gitsign enables signing and verification of Git repository commits using RHTAS. Gitsign implements keyless signing to sign Git commits with a valid OpenID Connect identity (in this case coming from Keycloak). Signing details will then be stored in the transparency log (Rekor) for subsequent verification.</p>
+</div>
+<div class="sect3">
+<h4 id="_download_and_install_gitsign"><a class="anchor" href="#_download_and_install_gitsign"></a>Download and Install Gitsign</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Download the gitsign binary from the CLI server web page:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/gitsign-amd64.gz | gunzip &gt; gitsign
+sudo chmod +x gitsign &amp;&amp; sudo mv gitsign /usr/local/bin/gitsign</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Make a temporary Git repository and configure Git to use gitsign for commit signing:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rm -rf ~/tmp-git-repo &amp;&amp; mkdir -p ~/tmp-git-repo &amp;&amp; cd ~/tmp-git-repo
+git init
+git config --local commit.gpgsign true # sign all commits
+git config --local tag.gpgsign true # sign all tags
+git config --local gpg.x509.program gitsign # use gitsign for signing
+git config --local gpg.format x509 # use x509 format for signing
+git config --local gitsign.fulcio $SIGSTORE_FULCIO_URL # use our Fulcio instance
+git config --local gitsign.rekor $SIGSTORE_REKOR_URL # use our Rekor instance
+git config --local gitsign.issuer $SIGSTORE_OIDC_ISSUER # use our OIDC provider
+git config --local gitsign.clientID trusted-artifact-signer # OIDC client name</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Make a test commit and sign it:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">git commit --allow-empty -S -m "Test of a signed commit"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A web browser will open for authentication. Copy the code from the web browser into the terminal to complete the commit process and sign the commit.</p>
+</div>
+</li>
+<li>
+<p>Verify the commit:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gitsign verify --certificate-identity=$EMAIL_ADDRESS --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_method_3_policy_validation_with_conforma_enterprise_contract"><a class="anchor" href="#_method_3_policy_validation_with_conforma_enterprise_contract"></a>Method 3: Policy Validation with Conforma (Enterprise Contract)</h3>
+<div class="paragraph">
+<p>Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the <code>ec</code> binary to verify the attestation(verifiable claims about any aspect of how a piece of software is produced) and signature of container images that use Red Hat&#8217;s Trusted Artifact Signer (RHTAS) signing framework. This is typically used in CI pipelines during container image promotion and deployment. Conforma policies are defined using the <a href="https://www.openpolicyagent.org/docs/policy-language" target="_blank" rel="noopener">rego policy language</a>.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Download the ec binary from the CLI server:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/ec-amd64.gz | gunzip &gt; ec-amd64
+sudo chmod +x ec-amd64 &amp;&amp; sudo mv ec-amd64 /usr/local/bin/ec</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a <code>predicate.json</code> file for SLSA provenance (Refer to the <a href="https://slsa.dev/spec/v1.0/provenance" target="_blank" rel="noopener">SLSA provenance predicate specifications</a> for more information about the schema layout):</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cat &lt;&lt; EOF &gt; ~/predicate.json
+{
+  "builder": {
+    "id": "https://localhost/dummy-id"
+  },
+  "buildType": "https://example.com/tekton-pipeline",
+  "invocation": {},
+  "buildConfig": {},
+  "metadata": {
+    "completeness": {
+      "parameters": false,
+      "environment": false,
+      "materials": false
+    },
+    "reproducible": false
+  },
+  "materials": []
+}
+EOF</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Attach the <code>predicate.json</code> file to the test image:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the image has at least one attestation and signature:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign tree ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><a href="https://conforma.dev/docs/cli/ec_validate_image.html" target="_blank" rel="noopener">Validate conformance</a> of container images with the provided policies:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h --certificate-identity $EMAIL_ADDRESS --certificate-oidc-issuer $OIDC_ISSUER_URL --output yaml --show-successes</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Conforma generates a pass-fail report with details on any security violations. When you add the <code>--info</code> flag, the report includes more details and possible solutions for any violations found.</p>
+</div>
+<div class="paragraph">
+<p>If all verification steps complete successfully, your RHTAS installation is working correctly and ready for production use.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps"><a class="anchor" href="#_next_steps"></a>Next Steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With Red Hat Trusted Artifact Signer installed and configured, you can now:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Sign software artifacts</p>
+</li>
+<li>
+<p>Verify artifact integrity</p>
+</li>
+<li>
+<p>Integrate with your CI/CD pipelines</p>
+</li>
+<li>
+<p>Configure policy-based signing workflows</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_cicd_integration_with_rhads_components"><a class="anchor" href="#_cicd_integration_with_rhads_components"></a>CI/CD Integration with RHADS Components</h3>
+<div class="paragraph">
+<p>RHTAS integrates seamlessly with other Red Hat Advanced Developer Suite components to create comprehensive CI/CD workflows. For example, you can use Red Hat Developer Hub templates to create project scaffolds that automatically include container image signing via <code>cosign</code> and Git commit signing via <code>gitsign</code> in their CI pipelines. Using Conforma&#8217;s policy validation, you can enforce security gates that verify artifact signatures and attestations before promoting images to production environments. This creates a cohesive developer experience where all artifacts are cryptographically signed, provenance is tracked through SLSA attestations, and policies ensure compliance before deployment.</p>
+</div>
+<div class="paragraph">
+<p>For more advanced configuration options and day-2 operation capabilities on RHEL, refer to the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer" target="_blank" rel="noopener">official Red Hat Trusted Artifact Signer documentation</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="environment-setup.html" class="query-params-link">Environment Setup</a></span>
+  <span class="next"><a href="trusted-profile-analyzer.html" class="query-params-link">2. Installing and Configuring Red Hat Trusted Profile Analyzer on RHEL</a></span>
+</nav>
+</article>
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>  </div>
+</main>
+</div>
+<footer class="footer">
+  <a href="https://demo.redhat.com" target="_blank" class="poweredBy"><p>Powered by</p><div class="labInfo_poweredBy" style="display: block; width: 260px;"><svg class="labInfo_poweredByLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1508.5 178.739"><g fill="#111"><path d="M316.6 63.2v-56H342a21.279 21.279 0 0 1 7.8 1.3 18.111 18.111 0 0 1 5.9 3.5 15.577 15.577 0 0 1 5 11.8 15.051 15.051 0 0 1-3.1 9.5 16.836 16.836 0 0 1-8.4 5.8l12.5 24.1h-9.3l-11.6-23H325v23Zm24.7-48.6H325v18.7h16.3q5.25 0 8.1-2.7a8.7 8.7 0 0 0 2.8-6.6 8.7 8.7 0 0 0-2.8-6.6c-1.8-1.9-4.5-2.8-8.1-2.8ZM364.1 42.8a20.674 20.674 0 0 1 1.6-8.2 20.288 20.288 0 0 1 4.3-6.7 19.92 19.92 0 0 1 6.5-4.5 19.718 19.718 0 0 1 8-1.6 18.463 18.463 0 0 1 7.8 1.6 18.677 18.677 0 0 1 6.2 4.5 20.927 20.927 0 0 1 4.1 6.8 23.2 23.2 0 0 1 1.5 8.4v2.3H372a13.822 13.822 0 0 0 4.6 8.4 13.6 13.6 0 0 0 9.1 3.3 15.553 15.553 0 0 0 5.7-1 12.858 12.858 0 0 0 4.6-2.6l5.1 5a25.983 25.983 0 0 1-7.4 4.1 24.69 24.69 0 0 1-8.4 1.3 21.306 21.306 0 0 1-8.4-1.6 22.763 22.763 0 0 1-6.8-4.4 20.788 20.788 0 0 1-4.5-6.7 23.2 23.2 0 0 1-1.5-8.4Zm20.2-14.2a11.527 11.527 0 0 0-8 3 13.046 13.046 0 0 0-4.2 7.8h24.2a13.091 13.091 0 0 0-4.2-7.8 11.106 11.106 0 0 0-7.8-3ZM443.1 63.2v-3.8a19.448 19.448 0 0 1-5.8 3.3 18.924 18.924 0 0 1-6.7 1.2 19.824 19.824 0 0 1-14.6-6.1 22.268 22.268 0 0 1-4.4-6.7 21.812 21.812 0 0 1 0-16.4A20.534 20.534 0 0 1 416 28a19.335 19.335 0 0 1 6.6-4.5 20.334 20.334 0 0 1 8.2-1.6 20.7 20.7 0 0 1 6.6 1 19.415 19.415 0 0 1 5.7 3V7.2l8-1.8v57.8Zm-25.2-20.4a13.718 13.718 0 0 0 4 10.1 13.45 13.45 0 0 0 9.8 4.1 14.956 14.956 0 0 0 6.4-1.3 15.954 15.954 0 0 0 4.9-3.6V33.6a14.988 14.988 0 0 0-4.9-3.5 15.271 15.271 0 0 0-6.4-1.3 13.423 13.423 0 0 0-9.9 4 13.806 13.806 0 0 0-3.9 10ZM478.1 63.2v-56h8.4v24h29.8v-24h8.4v56h-8.4V38.8h-29.8v24.4ZM547.2 64a16.483 16.483 0 0 1-10.8-3.5 11.037 11.037 0 0 1-4.2-8.9 10.375 10.375 0 0 1 4.7-9.2 20.76 20.76 0 0 1 11.8-3.2 27.841 27.841 0 0 1 5.8.6 27.374 27.374 0 0 1 5.3 1.6v-4.3a8.143 8.143 0 0 0-2.6-6.5 11.452 11.452 0 0 0-7.4-2.2 20.788 20.788 0 0 0-6 .9 34.616 34.616 0 0 0-6.6 2.6l-3-6a54.169 54.169 0 0 1 8.4-3.1 33.18 33.18 0 0 1 8.3-1.1c5.2 0 9.3 1.3 12.2 3.8s4.4 6.1 4.4 10.8v27h-7.8v-3.5a19.441 19.441 0 0 1-5.8 3.2 23.54 23.54 0 0 1-6.7 1Zm-7.3-12.6a5.646 5.646 0 0 0 2.6 4.8 11.193 11.193 0 0 0 6.6 1.8 16.256 16.256 0 0 0 5.9-1 14.449 14.449 0 0 0 4.9-2.9V47a19.778 19.778 0 0 0-4.8-1.8 24.933 24.933 0 0 0-5.7-.6 11.859 11.859 0 0 0-6.8 1.8 5.728 5.728 0 0 0-2.7 5ZM580.6 53.2v-24H572v-6.7h8.6V12.1l7.9-1.9v12.3h12v6.7h-12v22.1a5.94 5.94 0 0 0 1.4 4.4c.9.9 2.5 1.3 4.6 1.3a23.637 23.637 0 0 0 3-.2 10.857 10.857 0 0 0 2.8-.8v6.7a19.28 19.28 0 0 1-3.8.9 27.484 27.484 0 0 1-3.8.3c-3.9 0-7-.9-9-2.8-2-1.7-3.1-4.4-3.1-7.9Z"></path></g><path d="M127 90.2c12.5 0 30.6-2.6 30.6-17.5a12.678 12.678 0 0 0-.3-3.4L149.8 37c-1.7-7.1-3.2-10.3-15.7-16.6-9.7-5-30.8-13.1-37.1-13.1-5.8 0-7.5 7.5-14.4 7.5-6.7 0-11.6-5.6-17.9-5.6-6 0-9.9 4.1-12.9 12.5 0 0-8.4 23.7-9.5 27.2a4.216 4.216 0 0 0-.3 1.9c0 9.2 36.3 39.4 85 39.4Zm32.5-11.4c1.7 8.2 1.7 9.1 1.7 10.1 0 14-15.7 21.8-36.4 21.8-46.8 0-87.7-27.4-87.7-45.5a17.535 17.535 0 0 1 1.5-7.3C21.8 58.8 0 61.8 0 81c0 31.5 74.6 70.3 133.7 70.3 45.3 0 56.7-20.5 56.7-36.6-.1-12.8-11-27.3-30.9-35.9Z" fill="#e00"></path><path d="M159.5 78.8c1.7 8.2 1.7 9.1 1.7 10.1 0 14-15.7 21.8-36.4 21.8-46.8 0-87.7-27.4-87.7-45.5a17.535 17.535 0 0 1 1.5-7.3l3.7-9.1a4.877 4.877 0 0 0-.3 2c0 9.2 36.3 39.4 85 39.4 12.5 0 30.6-2.6 30.6-17.5a12.678 12.678 0 0 0-.3-3.4Z"></path><path d="M253.5 158.7a2.22 2.22 0 0 1-2.2-2.2V2.2a2.2 2.2 0 0 1 4.4 0v154.2a2.242 2.242 0 0 1-2.2 2.3Z" fill="#111"></path><text data-name="Demo Platform" transform="translate(1186 149)" fill="#111" font-size="82" font-family="'RedHatDisplay', 'Overpass', overpass, helvetica, arial, sans-serif" font-weight="700"><tspan x="-877.892" y="0">Demo Platform</tspan></text></svg></div></div>
+</footer>
+<script src="../_/js/vendor/clipboard.js"></script>
+<script src="../_/js/site.js"></script>
+<script async src="../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
