@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Installing and Configuring Red Hat Trusted Artifact Signer on RHEL :: Red Hat Advanced Developer Suite Enablement L3 RHEL</title>
     <link rel="canonical" href="https://redhat-ads-tech.github.io/rhads-enablement-l3-rhel/modules/trusted-artifact-signer.html">
-    <link rel="prev" href="index.html">
+    <link rel="prev" href="environment-setup.html">
     <link rel="next" href="trusted-profile-analyzer.html">
-    <meta name="generator" content="Antora 3.1.13">
+    <meta name="generator" content="Antora 3.1.14">
     <link rel="stylesheet" href="../_/css/site.css">
 <link rel="icon" href="../_/img/favicon.ico" type="image/x-icon">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -43,6 +43,9 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="environment-setup.html">Environment Setup</a>
+  </li>
   <li class="nav-item is-current-page" data-depth="1">
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="trusted-artifact-signer.html">1. Installing and Configuring Red Hat Trusted Artifact Signer on RHEL</a>
@@ -234,7 +237,8 @@
 <p>Copy and paste (you can click the small icon to the right of the command to copy, and then <kbd>CTRL-V</kbd> or <kbd>CMD-V</kbd> on MacOS to paste) into the terminal and press <kbd>ENTER</kbd> to run the command and assign the necessary environment variables:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export BASE_HOSTNAME={base_hostname}
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export GUID=my-guid
+export BASE_HOSTNAME={base_hostname}
 export KEYCLOAK_REALM=trusted-artifact-signer
 export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
 export TUF_URL=https://tuf.$BASE_HOSTNAME
@@ -276,33 +280,6 @@ export REGISTRY_PASSWORD='&lt;your password or service account token&gt;'</code>
 </div>
 <div class="paragraph">
 <p>You should see <code>Login Succeeded!</code> indicating that you are logged in. If you get an error, confirm that your credentials are correct and that you have the correct permissions to access the registry.</p>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_create_certificates_temporary_solution"><a class="anchor" href="#_create_certificates_temporary_solution"></a>Create certificates (Temporary solution)</h3>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>In the same terminal, copy and paste this into the terminal and press <kbd>Enter</kbd> to run the command:</p>
-<div class="listingblock execute">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" &amp;&amp; \
-cd $TMPDIR &amp;&amp; \
-sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' &amp;&amp; \
-sudo cat cert-00.pem cert-01.pem &gt; /home/lab-user/server.pem &amp;&amp; \
-sudo cat cert-02.pem &gt; /home/lab-user/root.pem &amp;&amp; \
-sudo cp /etc/letsencrypt/live/rhtpa.{base_hostname}/privkey.pem /home/lab-user &amp;&amp; \
-sudo chown lab-user /home/lab-user/*.pem &amp;&amp; \
-sudo chmod 660 /home/lab-user/*.pem &amp;&amp; \
-cd /home/lab-user &amp;&amp;
-sudo rm -rf $TMPDIR</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This command creates a temporary directory, splits the certificate into two files, and copies the certificate and private key to the <code>lab-user</code> home directory.</p>
 </div>
 </li>
 </ol>
@@ -425,7 +402,7 @@ EOF</code></pre>
   tasks:
     - name: Include Vars
       ansible.builtin.include_vars:
-        file: rhtas-vars.yml
+        file: rhtas_vars.yml
     - name: Call tas_single_node role
       ansible.builtin.include_role:
         name: redhat.artifact_signer.tas_single_node
@@ -470,14 +447,13 @@ EOF</code></pre>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cd ~ &amp;&amp; \
-ansible-navigator \ <i class="conum" data-value="1"></i><b>(1)</b>
-  -m stdout \ <i class="conum" data-value="2"></i><b>(2)</b>
-  --eei=localhost/ansible_ee \ <i class="conum" data-value="3"></i><b>(3)</b>
-  --pp=missing \ <i class="conum" data-value="4"></i><b>(4)</b>
-  run install_rhtas.yml \ <i class="conum" data-value="5"></i><b>(5)</b>
-  --pae=false \ <i class="conum" data-value="6"></i><b>(6)</b>
-  -i inventory <i class="conum" data-value="7"></i><b>(7)</b>
-EOF</code></pre>
+ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
+  -m stdout \<i class="conum" data-value="2"></i><b>(2)</b>
+  --eei=localhost/ansible_ee \<i class="conum" data-value="3"></i><b>(3)</b>
+  --pp=missing \<i class="conum" data-value="4"></i><b>(4)</b>
+  run install_rhtas.yml \<i class="conum" data-value="5"></i><b>(5)</b>
+  --pae=false \<i class="conum" data-value="6"></i><b>(6)</b>
+  -i inventory<i class="conum" data-value="7"></i><b>(7)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -579,12 +555,20 @@ cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1) <i clas
 </div>
 </li>
 <li>
-<p>Create a temporary container image to sign using <code>podman</code>:</p>
+<p>Create a container image to sign using <code>podman</code>:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "FROM scratch" &gt; ./tmp.Dockerfile
-podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image:1h
+podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:1h
 rm ./tmp.Dockerfile</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Push the image to a registry:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman push ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
 </div>
 </div>
 </li>
@@ -592,7 +576,7 @@ rm ./tmp.Dockerfile</code></pre>
 <p>Sign the container image:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign sign -y ttl.sh/rhtas/test-image:1h</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign sign -y ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -601,9 +585,23 @@ rm ./tmp.Dockerfile</code></pre>
 </li>
 <li>
 <p>Verify the signed container image:</p>
+<div class="paragraph">
+<p>Based on the RHBK user that was used  to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of <code>&lt;username&gt;@redhat.com</code>. So if <code>chris</code> signed the image, the email address would be <code>chris@redhat.com</code>.</p>
+</div>
+</li>
+<li>
+<p>Set thee email address in an environment variable:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign verify --certificate-identity=jdoe@redhat.com ttl.sh/rhtas/test-image:1h</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export EMAIL_ADDRESS="chris@redhat.com"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now verify the image</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign verify --certificate-identity=$EMAIL_ADDRESS ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -631,7 +629,7 @@ sudo chmod +x rekor-cli &amp;&amp; sudo mv rekor-cli /usr/local/bin/rekor-cli</c
 <p>Search for an email address to get the universal unique identifier (UUID):</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rekor-cli search --email $EMAIL_ADDRESS --rekor_server $COSIGN_REKOR_URL --format json | jq</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -699,7 +697,7 @@ git config --local gitsign.clientID trusted-artifact-signer # OIDC client name</
 <p>Verify the commit:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gitsign verify --certificate-identity=jdoe@redhat.com --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">gitsign verify --certificate-identity=$EMAIL_ADDRESS --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD</code></pre>
 </div>
 </div>
 </li>
@@ -753,7 +751,7 @@ EOF</code></pre>
 <p>Attach the <code>predicate.json</code> file to the test image:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
 </div>
 </div>
 </li>
@@ -761,7 +759,7 @@ EOF</code></pre>
 <p>Verify the image has at least one attestation and signature:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign tree ttl.sh/rhtas/test-image:1h</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cosign tree ttl.sh/rhtas/test-image-$GUID:1h</code></pre>
 </div>
 </div>
 </li>
@@ -769,7 +767,7 @@ EOF</code></pre>
 <p><a href="https://conforma.dev/docs/cli/ec_validate_image.html" target="_blank" rel="noopener">Validate conformance</a> of container images with the provided policies:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ec validate image --image ttl.sh/rhtas/test-image:1h --certificate-identity-regexp 'jdoe@example.com' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h --certificate-identity $EMAIL_ADDRESS --certificate-oidc-issuer $OIDC_ISSUER_URL --output yaml --show-successes</code></pre>
 </div>
 </div>
 </li>
@@ -818,7 +816,7 @@ EOF</code></pre>
 </div>
 </div>
 <nav class="pagination">
-  <span class="prev"><a href="index.html" class="query-params-link">Red Hat Advanced Developer Suite Enablement L3 RHEL</a></span>
+  <span class="prev"><a href="environment-setup.html" class="query-params-link">Environment Setup</a></span>
   <span class="next"><a href="trusted-profile-analyzer.html" class="query-params-link">2. Installing and Configuring Red Hat Trusted Profile Analyzer on RHEL</a></span>
 </nav>
 </article>
