@@ -47,6 +47,7 @@ The following steps will take you through the installation and configuration of 
 +
 [source,bash,role="execute", subs="+attributes"]
 ----
+export GUID={guid}
 export BASE_HOSTNAME={base_hostname}
 export KEYCLOAK_REALM=trusted-artifact-signer
 export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
@@ -85,26 +86,6 @@ podman login registry.redhat.io -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"
 ----
 +
 You should see `Login Succeeded!` indicating that you are logged in. If you get an error, confirm that your credentials are correct and that you have the correct permissions to access the registry.
-
-=== Create certificates (Temporary solution)
-
-. In the same terminal, copy and paste this into the terminal and press kbd:[Enter] to run the command:
-+
-[source,bash, role="execute", subs="+attributes"]
-----
-TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" && \
-cd $TMPDIR && \
-sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
-sudo cat cert-00.pem cert-01.pem > /home/lab-user/server.pem && \
-sudo cat cert-02.pem > /home/lab-user/root.pem && \
-sudo cp /etc/letsencrypt/live/rhtpa.{base_hostname}/privkey.pem /home/lab-user && \
-sudo chown lab-user /home/lab-user/*.pem && \
-sudo chmod 660 /home/lab-user/*.pem && \
-cd /home/lab-user &&
-sudo rm -rf $TMPDIR
-----
-+
-This command creates a temporary directory, splits the certificate into two files, and copies the certificate and private key to the `lab-user` home directory.
 
 === Create Ansible Variables
 
@@ -202,7 +183,7 @@ cat << EOF > ~/install_rhtas.yml
   tasks:
     - name: Include Vars
       ansible.builtin.include_vars:
-        file: rhtas-vars.yml
+        file: rhtas_vars.yml
     - name: Call tas_single_node role
       ansible.builtin.include_role:
         name: redhat.artifact_signer.tas_single_node
@@ -235,14 +216,13 @@ EOF
 [source,bash, role="execute"]
 ----
 cd ~ && \
-ansible-navigator \ # <1>
-  -m stdout \ # <2>
-  --eei=localhost/ansible_ee \ # <3>
-  --pp=missing \ # <4>
-  run install_rhtas.yml \ # <5>
-  --pae=false \ # <6>
-  -i inventory # <7>
-EOF
+ansible-navigator \# <1>
+  -m stdout \# <2>
+  --eei=localhost/ansible_ee \# <3>
+  --pp=missing \# <4>
+  run install_rhtas.yml \# <5>
+  --pae=false \# <6>
+  -i inventory# <7>
 ----
 <1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do).
 <2> Displays the output of the playbook in the terminal.
@@ -285,29 +265,47 @@ cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1) # <2>
 <1> Downloads the known-good `root.json` file (containing the trusted certificate and key targets) from the local TUF server.
 <2> Initialize cosign to prepare for signing and verification later on using the known-good TUF root.
 
-. Create a temporary container image to sign using `podman`:
+. Create a container image to sign using `podman`:
 +
 [source,bash,role="execute"]
 ----
 echo "FROM scratch" > ./tmp.Dockerfile
-podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image:1h
+podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:1h
 rm ./tmp.Dockerfile
+----
+
+. Push the image to a registry:
++
+[source,bash,role="execute"]
+----
+podman push ttl.sh/rhtas/test-image-$GUID:1h
 ----
 
 . Sign the container image:
 +
 [source,bash,role="execute"]
 ----
-cosign sign -y ttl.sh/rhtas/test-image:1h
+cosign sign -y ttl.sh/rhtas/test-image-$GUID:1h
 ----
 +
 A web browser opens allowing you to sign the container image with an email address. This solution is known as https://docs.sigstore.dev/cosign/signing/overview/[keyless signing^] and is a recommended practice for signing container images, as it does not rely on long-lived certs and keys that could become compromised. A short-lived certificate is generated (from Fulcio) for each signature, attached to the artifact (container), and is only valid for the duration of the signature, and can be later verified against the Rekor transparency log.
 
 . Verify the signed container image:
 +
+Based on the RHBK user that was used  to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of `<username>@redhat.com`. So if `chris` signed the image, the email address would be `chris@redhat.com`.
+
+. Set thee email address in an environment variable:
++
+[source,bash,role="execute", subs="+attributes"]
+----
+export EMAIL_ADDRESS="chris@redhat.com"
+----
++
+Now verify the image
++
 [source,bash,role="execute"]
 ----
-cosign verify --certificate-identity=jdoe@redhat.com ttl.sh/rhtas/test-image:1h
+cosign verify --certificate-identity=$EMAIL_ADDRESS ttl.sh/rhtas/test-image-$GUID:1h
 ----
 +
 To verify, Cosign queries the transparency log (Rekor) to compare the public key bound to the certificate, and checks the timestamp on the signature against the artifact's entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid.
@@ -332,7 +330,7 @@ rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
 +
 [source,bash,role="execute"]
 ----
-rekor-cli search --email jdoe@redhat.com --rekor_server $COSIGN_REKOR_URL --format json | jq
+rekor-cli search --email $EMAIL_ADDRESS --rekor_server $COSIGN_REKOR_URL --format json | jq
 ----
 This command returns the UUID for use with the next step.
 
@@ -386,7 +384,7 @@ A web browser will open for authentication. Copy the code from the web browser i
 +
 [source,bash,role="execute"]
 ----
-gitsign verify --certificate-identity=jdoe@redhat.com --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
+gitsign verify --certificate-identity=$EMAIL_ADDRESS --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
 ----
 
 === Method 3: Policy Validation with Conforma (Enterprise Contract)
@@ -430,21 +428,21 @@ EOF
 +
 [source,bash,role="execute"]
 ----
-cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image:1h
+cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image-$GUID:1h
 ----
 
 . Verify the image has at least one attestation and signature:
 +
 [source,bash,role="execute"]
 ----
-cosign tree ttl.sh/rhtas/test-image:1h
+cosign tree ttl.sh/rhtas/test-image-$GUID:1h
 ----
 
 . https://conforma.dev/docs/cli/ec_validate_image.html[Validate conformance^] of container images with the provided policies:
 +
 [source,bash,role="execute"]
 ----
-ec validate image --image ttl.sh/rhtas/test-image:1h --certificate-identity-regexp 'jdoe@example.com' --certificate-oidc-issuer-regexp 'keycloak-system' --output yaml --show-successes
+ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h --certificate-identity $EMAIL_ADDRESS --certificate-oidc-issuer $OIDC_ISSUER_URL --output yaml --show-successes
 ----
 
 Conforma generates a pass-fail report with details on any security violations. When you add the `--info` flag, the report includes more details and possible solutions for any violations found.
