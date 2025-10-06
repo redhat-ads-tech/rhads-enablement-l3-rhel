@@ -1,0 +1,25 @@
+= Environment Setup
+
+Prior to starting the labs, there are a few steps that need to be completed first.
+
+== Create certificates (Temporary solution)
+
+Your lab environment has been provisioned with a LetsEncrypt certificate to allow for trusted communication to be established between the various components. Different certificate requirements are needed when working with TAS and TPA and as a result, additional steps are needed to modify the provided certificate into formats that they require.
+
+. Open the terminal and copy and paste the following and press kbd:[Enter] to run the command:
++
+[source,bash, role="execute", subs="+attributes"]
+----
+TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" && \
+cd $TMPDIR && \
+sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
+sudo cat cert-00.pem cert-01.pem > /home/lab-user/server.pem && \
+sudo cat cert-02.pem > /home/lab-user/root.pem && \
+sudo cp /etc/letsencrypt/live/rhtpa.{base_hostname}/privkey.pem /home/lab-user && \
+sudo chown lab-user /home/lab-user/*.pem && \
+sudo chmod 660 /home/lab-user/*.pem && \
+cd /home/lab-user &&
+sudo rm -rf $TMPDIR
+----
++
+This command creates a temporary directory, splits the certificate into two files, and copies the certificate and private key to the `lab-user` home directory.

@@ -1,3 +1,5 @@
+* xref:environment-setup.adoc[Environment Setup]
+
 * xref:trusted-artifact-signer.adoc[1. Installing and Configuring Red Hat Trusted Artifact Signer on RHEL]
 ** xref:trusted-artifact-signer.adoc#prerequisites[Prerequisites]
 ** xref:trusted-artifact-signer.adoc#installation[Installation]

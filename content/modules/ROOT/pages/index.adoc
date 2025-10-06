@@ -27,15 +27,15 @@ This workshop environment is pre-configured with:
 
 * https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux-10[Red Hat Enterprise Linux 10^]
 * https://access.redhat.com/products/red-hat-build-of-keycloak/[Red Hat Build of Keycloak^] (acting as an OpenID Connect provider)
-* https://www.redhat.com/en/technologies/management/ansible[Red Hat Ansible Automation Platform^]
-* A pre-installed https://docs.ansible.com/ansible/latest/getting_started_ee/index.html[Ansible Execution Environment (EE)^] container image with the required Ansible Collections for the products (these can also be downloaded separately and used with a generic execution environment)
+* https://www.redhat.com/en/technologies/management/ansible[Red Hat Ansible Developer Tools^]
+* A pre-installed https://docs.ansible.com/ansible/latest/getting_started_ee/index.html[Ansible Execution Environment (EE)^] container image with the required Ansible Collections for the products (these can also be downloaded separately and used with a custom execution environment of your own)
 
 The workshop uses a multi-machine architecture where Ansible jobs run from a bastion server to deploy and configure the security components:
 
-* **Bastion Server**: (hostname: `bastion`) Runs Ansible Automation Platform and executes playbooks to install and configure TAS and TPA on target machines
+* **Bastion Server**: (hostname: `bastion`) Includes Ansible developer tools and executes playbooks to install and configure TAS and TPA on target machines
 * **TAS Machine**: (hostname: `rhtas`) Dedicated RHEL 10 machine where Red Hat Trusted Artifact Signer is installed and configured
 * **TPA Machine**: (hostname: `rhtpa`) Dedicated RHEL 10 machine where Red Hat Trusted Profile Analyzer is installed and configured  
-* **Utility Machine**: (hostname: `utility`) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components. It also has a vanilla instance of PostgreSQL for use by Keycloak and RHTPA to store certificate and signing data.
+* **Utility Machine**: (hostname: `utility`) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components. It also includes vanilla instances of PostgreSQL for use by Keycloak, RHTAS and RHTPA.
 
 == Prerequisites
 
