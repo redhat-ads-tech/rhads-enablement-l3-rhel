@@ -211,6 +211,17 @@ EOF
 
 === Run Playbook to install RHTAS
 
+You should have the following files in the `~/` directory (run `ls -l ~/` to confirm):
+
+* `install_rhtas.yml` - The Ansible playbook to install RHTAS
+* `inventory` - The inventory file to use specifying which hosts to use
+* `privkey.pem` - The private key for the TLS certificates
+* `rhtas_vars.yml` - The Ansible variables file to use with RHTAS configuration
+* `root.pem` - The root TLS signed certificate
+* `server.pem` - The server certificate 
+
+If you do not have these files, please go back and review the previous steps. If you do have the files, you can continue with the next step.
+
 . Run the following command to install RHTAS.
 +
 [source,bash, role="execute"]
@@ -232,7 +243,15 @@ ansible-navigator \# <1>
 <6> Don't create playbook artifacts (like JSON log files)
 <7> The inventory file to use
 +
-The installation will take a few minutes to complete. Wait for it to finish before moving on!
+The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:
+
+[source,console]
+----
+PLAY RECAP *********************************************************************************
+rhtas                      : ok=262  changed=114  unreachable=0    failed=0    skipped=233  rescued=0    ignored=0   
+----
++
+If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the `/home/lab-user` directory correctly and appear correct.
 
 == Verify Trusted Artifact Signer installation
 
@@ -288,13 +307,37 @@ podman push ttl.sh/rhtas/test-image-$GUID:1h
 cosign sign -y ttl.sh/rhtas/test-image-$GUID:1h
 ----
 +
-A web browser opens allowing you to sign the container image with an email address. This solution is known as https://docs.sigstore.dev/cosign/signing/overview/[keyless signing^] and is a recommended practice for signing container images, as it does not rely on long-lived certs and keys that could become compromised. A short-lived certificate is generated (from Fulcio) for each signature, attached to the artifact (container), and is only valid for the duration of the signature, and can be later verified against the Rekor transparency log.
+By using the `-y` option you are agreeing to the terms and conditions of the signature system based on sigstore and avoiding an interactive prompt.
++
+IF you were running this on your local workstation, a web browser would open and ask you to login with your Keycloak credentials. In this environment, that's not possible, so you'll see an `xdg-open` error, and then a long link in the terminal:
++
+image::rhtas-url-login.png[]
++
+Copy and paste the link into a web browser (or just click on it if possible) to login to the pre-configured OIDC (Keycloak) server with your credentials:
++
+* Username: `{rhtas_user1_password}`
+* Password: `{rhtas_user1_password}`
++
+image::rhtas-url-login2.png[]
++
+Copy/paste the resulting code back into the terminal to complete the signing process:
++
+image::rhtas-url-login3.png[]
++
+image::rhtas-url-login4.png[]
++
+[NOTE]
+====
+If you wait too long during this process, the short-lived authentication session and certificate will expire, and you may get timeout / deadline exceeded errors. Simply repeat the signing command.
+====
++
+This solution is known as https://docs.sigstore.dev/cosign/signing/overview/[keyless signing^] and is a recommended practice for signing container images, as it does not rely on long-lived certs and keys that could become compromised. A short-lived certificate is generated (from Fulcio) for each signature, attached to the artifact (container), and is only valid for the duration of the signature, and can be later verified against the Rekor transparency log.
 
 . Verify the signed container image:
 +
 Based on the Keycloak user that was used to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of `<username>@redhat.com`. So if `chris` signed the image, the email address would be `chris@redhat.com`.
-
-. Set the email address in an environment variable:
++
+Set the email address in an environment variable:
 +
 [source,bash,role="execute", subs="+attributes"]
 ----
@@ -305,10 +348,22 @@ Now verify the image
 +
 [source,bash,role="execute"]
 ----
-cosign verify --certificate-identity=$EMAIL_ADDRESS ttl.sh/rhtas/test-image-$GUID:1h
+cosign verify --certificate-identity=$EMAIL_ADDRESS ttl.sh/rhtas/test-image-$GUID:1h | jq
 ----
 +
 To verify, Cosign queries the transparency log (Rekor) to compare the public key bound to the certificate, and checks the timestamp on the signature against the artifact's entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid.
++
+If successful, you should see the following output:
++
+[source,console]
+----
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The code-signing certificate was verified using trusted certificate authority certificates
+----
++
+Along with the JSON representation of the signature.
 
 . Now lets query the transparency log by using the Rekor command-line interface. Download the rekor-cli binary from the CLI server:
 +
@@ -325,6 +380,8 @@ sudo chmod +x rekor-cli && sudo mv rekor-cli /usr/local/bin/rekor-cli
 ----
 rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
 ----
++
+You should see the JSON representation of the first entry in the log, containing the submitted artifact (your container image), and the inclusion proof and signed timestamp, which can be used to verify consistency and integrity of the artifact.
 
 . Search for an email address to get the universal unique identifier (UUID):
 +
@@ -332,14 +389,17 @@ rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
 ----
 rekor-cli search --email $EMAIL_ADDRESS --rekor_server $COSIGN_REKOR_URL --format json | jq
 ----
-This command returns the UUID for use with the next step.
+This command returns the UUID of any log entries that match the email address (you should see only one, but if you repeated the singing process you'd see two). This UUID can be used to get the transaction details.
 
-. Get transaction details by UUID:
+. Get transaction details by UUID (replace `<UUID>` with the UUID you got from the previous step):
 +
 [source,bash,role="execute"]
 ----
 rekor-cli get --uuid $UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
 ----
+You will get the same entry as before.
+
+These methods (and others) can be used in CI pipelines to verify the authenticity of the artifacts during build, promotion, and deployment.
 
 === Method 2: Git Commit Signing and Verification with Gitsign
 
@@ -378,7 +438,14 @@ git config --local gitsign.clientID trusted-artifact-signer # OIDC client name
 git commit --allow-empty -S -m "Test of a signed commit"
 ----
 +
-A web browser will open for authentication. Copy the code from the web browser into the terminal to complete the commit process and sign the commit.
+The same process should be followed as before. Copy the code from the web browser into the terminal to complete the commit process and sign the commit. You should seE:
++
+[source,console]
+----
+tlog entry created with index: 2
+[master (root-commit) 615b060] Test of a signed commit
+ Committer: Red Hat Demo Platform Student <lab-user@bastion.lab.sandbox-7cx24-multi-cloud-base-infra.svc.cluster.local>
+----
 
 . Verify the commit:
 +
@@ -386,8 +453,26 @@ A web browser will open for authentication. Copy the code from the web browser i
 ----
 gitsign verify --certificate-identity=$EMAIL_ADDRESS --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
 ----
++
+This extracts the signature attached to the commit, verifies it against the certificate issued during the signing process, confirms the certificate chain is valid against the known good trusted root, and that the signing certificate was recorded in Rekor, and that the OIDC identity matches what's expected.
++
+You should see:
++
+[source,console]
+----
+tlog index: 2
+gitsign: Signature made using certificate ID 0xfd13bcafe1b0c9fed3d0df3345beb7ec192c94af | 
+gitsign: Good signature from [chris@redhat.com](https://rhbk.7cx24.apps.ocpv04.rhdp.net/realms/trusted-artifact-signer)
+Validated Git signature: true
+Validated Rekor entry: true
+Validated Certificate claims: true
+----
++
+Note the `Good signature` and Validation confirmations indicating that the signature is valid on the commit.
 
 === Method 3: Policy Validation with Conforma (Enterprise Contract)
+
+The first two methods explored above verify the authenticity of the artifact (container image or Git commit) using the signature and attestation. Conforma takes it a step further by verifying the artifact against a set of policies.
 
 Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the `ec` binary to verify the attestation(verifiable claims about any aspect of how a piece of software is produced) and signature of container images that use Red Hat's Trusted Artifact Signer (RHTAS) signing framework. This is typically used in CI pipelines during container image promotion and deployment. Conforma policies are defined using the https://www.openpolicyagent.org/docs/policy-language[rego policy language^]. 
 
@@ -423,6 +508,11 @@ cat << EOF > ~/predicate.json
 }
 EOF
 ----
++
+[NOTE]
+====
+This file is just an example with dummy data. In a real-world scenario, you would use the actual data from the build of the container image, including a real builder ID, links to source repos, dependencies in `materials`, and how it was built (in the `invocation` and `buildConfig` fields).
+====
 
 . Attach the `predicate.json` file to the test image:
 +
@@ -430,12 +520,32 @@ EOF
 ----
 cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image-$GUID:1h
 ----
++
+The same process should be followed as before. Copy the code from the web browser into the terminal to complete the attestation process. You should see:
++
+[source,console]
+----
+tlog entry created with index: xxxx
+----
++
+This makes a record in the transparency log (Rekor) for the attestation. The attestation in this case is the SLSA provenance attestation, recording who built it, what source repo, which builder, what commands, what dependencies, etc.
 
 . Verify the image has at least one attestation and signature:
 +
 [source,bash,role="execute"]
 ----
 cosign tree ttl.sh/rhtas/test-image-$GUID:1h
+----
++
+This outputs any attached attestation and signature for the image. You should see something like this (at least 1 attestation and 1 signature):
++
+[source,console]
+----
+📦 Supply Chain Security Related artifacts for an image: ttl.sh/rhtas/test-image-$GUID:1h@sha256:7de5fa822a9d1e507c36565ee0cf50c08faa64505461c844a3ce3944d23efa35
+└── 💾 Attestations for an image tag: ttl.sh/rhtas/test-image-$GUID:1h@sha256:7de5fa822a9d1e507c36565ee0cf50c08faa64505461c844a3ce3944d23efa35.att
+   └── 🍒 sha256:40d94d96a6d3ab3d94b429881e1b470ae9a3cac55a3ec874051bdecd9da06c2e
+└── 🔐 Signatures for an image tag: ttl.sh/rhtas/test-image-$GUID:1h@sha256:7de5fa822a9d1e507c36565ee0cf50c08faa64505461c844a3ce3944d23efa35.sig
+   └── 🍒 sha256:f32171250715d4538aec33adc40fac2343f5092631d4fc2457e2116a489387b7
 ----
 
 . https://conforma.dev/docs/cli/ec_validate_image.html[Validate conformance^] of container images with the provided policies:
@@ -449,6 +559,25 @@ Conforma generates a pass-fail report with details on any security violations. W
 
 If all verification steps complete successfully, your RHTAS installation is working correctly and ready for production use.
 
+[NOTE]
+====
+Without specifying a policy, Conforma just does the minimal integrity checks and calls it a day. In practice, organizations would typically define policies to check against, and use Conforma to validate the artifacts against those policies. For example, the Conforma project has some pre-defined policy definitions for common security best practices that organizations can start with, and it is designed to be extensible to allow for organizations to define their own policies. You can see how our dummy data fares against these policies by running 
+
+[source,bash,role="execute"]
+----
+ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h --certificate-identity $EMAIL_ADDRESS --certificate-oidc-issuer $OIDC_ISSUER_URL --output yaml --show-successes --policy '{
+    "configuration": { "include": ["@minimal"] },
+    "sources": [
+      {
+        "policy": ["oci::quay.io/enterprise-contract/ec-release-policy:latest"],
+        "data":   ["oci::quay.io/enterprise-contract/ec-policy-data:latest"]
+      }
+    ]
+  }'  
+----
+Here you can see a number of _violations_ in the output indicating our dummy data failed the policy checks.
+====
+
 == Next Steps
 
 With Red Hat Trusted Artifact Signer installed and configured, you can now:
@@ -460,6 +589,6 @@ With Red Hat Trusted Artifact Signer installed and configured, you can now:
 
 === CI/CD Integration with RHADS Components
 
-RHTAS integrates seamlessly with other Red Hat Advanced Developer Suite components to create comprehensive CI/CD workflows. For example, you can use Red Hat Developer Hub templates to create project scaffolds that automatically include container image signing via `cosign` and Git commit signing via `gitsign` in their CI pipelines. Using Conforma's policy validation, you can enforce security gates that verify artifact signatures and attestations before promoting images to production environments. This creates a cohesive developer experience where all artifacts are cryptographically signed, provenance is tracked through SLSA attestations, and policies ensure compliance before deployment.
+RHTAS integrates seamlessly with other Red Hat Advanced Developer Suite components to create comprehensive CI/CD workflows. For example, you can use Red Hat Developer Hub templates to create project scaffolds that automatically include container image signing via `cosign` and Git commit signing via `gitsign` in their CI pipelines. Using Conforma's policy validation, you can enforce security gates that verify artifact signatures, SBOMs and attestations before promoting images to production environments. This creates a cohesive developer experience where all artifacts are cryptographically signed, provenance is tracked through SLSA attestations, and policies ensure compliance before deployment.
 
 For more advanced configuration options and day-2 operation capabilities on RHEL, refer to the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer[official Red Hat Trusted Artifact Signer documentation^].
