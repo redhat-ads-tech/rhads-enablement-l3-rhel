@@ -292,9 +292,9 @@ A web browser opens allowing you to sign the container image with an email addre
 
 . Verify the signed container image:
 +
-Based on the RHBK user that was used  to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of `<username>@redhat.com`. So if `chris` signed the image, the email address would be `chris@redhat.com`.
+Based on the Keycloak user that was used to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of `<username>@redhat.com`. So if `chris` signed the image, the email address would be `chris@redhat.com`.
 
-. Set thee email address in an environment variable:
+. Set the email address in an environment variable:
 +
 [source,bash,role="execute", subs="+attributes"]
 ----
