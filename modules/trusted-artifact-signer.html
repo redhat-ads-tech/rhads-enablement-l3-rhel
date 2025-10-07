@@ -586,11 +586,11 @@ rm ./tmp.Dockerfile</code></pre>
 <li>
 <p>Verify the signed container image:</p>
 <div class="paragraph">
-<p>Based on the RHBK user that was used  to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of <code>&lt;username&gt;@redhat.com</code>. So if <code>chris</code> signed the image, the email address would be <code>chris@redhat.com</code>.</p>
+<p>Based on the Keycloak user that was used to sign the image, their email address was added as an identity within the signature. This vales can be used to verify the signature of the image. The email address takes the form of <code>&lt;username&gt;@redhat.com</code>. So if <code>chris</code> signed the image, the email address would be <code>chris@redhat.com</code>.</p>
 </div>
 </li>
 <li>
-<p>Set thee email address in an environment variable:</p>
+<p>Set the email address in an environment variable:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export EMAIL_ADDRESS="chris@redhat.com"</code></pre>
