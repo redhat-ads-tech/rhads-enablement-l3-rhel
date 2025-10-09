@@ -253,6 +253,22 @@ rhtas                      : ok=262  changed=114  unreachable=0    failed=0    s
 +
 If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the `/home/lab-user` directory correctly and appear correct.
 
+To see the running services on the `rhtas` node, run the following command:
++
+[source,bash,role="execute"]
+----
+ssh rhtas sudo "podman pod ps --filter status=running"
+----
+
+This will run the `podman pod ps` command on the `rhtas` node. You should see a number of pods for each of the services that were installed for RHTAS, including `rekor`, `rekor-search`, `fulcio`, `tuf`, `ctlog`, `cli-server`, `trillian`, and `nginx`. To see the log files for the `rekor` service, run the following command:
++
+[source,bash,role="execute"]
+----
+ssh rhtas "sudo podman pod logs -f rekor-server-pod"
+----
+
+Press kbd:[CTRL-C] (or kbd:[CMD-C] on MacOS) to exit the log output. This can be useful for debugging issues with the RHTAS installation.
+
 == Verify Trusted Artifact Signer installation
 
 After installation and configuration, you can verify that Red Hat Trusted Artifact Signer (RHTAS) is working correctly by signing and verifying test artifacts. This section covers signing and verifying test artifacts using the following methods: *Cosign* for container images, *Gitsign* for Git commits, and *Conforma (formerly known as Enterprise Contract)* for policy validation. You can use any or all of these methods in your own CI pipelines to sign and verify artifacts before they are deployed to production.
@@ -315,7 +331,7 @@ image::rhtas-url-login.png[]
 +
 Copy and paste the link into a web browser (or just click on it if possible) to login to the pre-configured OIDC (Keycloak) server with your credentials:
 +
-* Username: `{rhtas_user1_password}`
+* Username: `{rhtas_user1_username}`
 * Password: `{rhtas_user1_password}`
 +
 image::rhtas-url-login2.png[]
@@ -353,7 +369,7 @@ cosign verify --certificate-identity=$EMAIL_ADDRESS ttl.sh/rhtas/test-image-$GUI
 +
 To verify, Cosign queries the transparency log (Rekor) to compare the public key bound to the certificate, and checks the timestamp on the signature against the artifact's entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid.
 +
-If successful, you should see the following output:
+If successful, you should see the following output (at the start, before the JSON representation of the signature):
 +
 [source,console]
 ----

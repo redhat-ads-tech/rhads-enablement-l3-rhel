@@ -12,10 +12,10 @@ Your lab environment has been provisioned with a LetsEncrypt certificate to allo
 ----
 TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" && \
 cd $TMPDIR && \
-sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
+sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtas.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
 sudo cat cert-00.pem cert-01.pem > /home/lab-user/server.pem && \
 sudo cat cert-02.pem > /home/lab-user/root.pem && \
-sudo cp /etc/letsencrypt/live/rhtpa.{base_hostname}/privkey.pem /home/lab-user && \
+sudo cp /etc/letsencrypt/live/rhtas.{base_hostname}/privkey.pem /home/lab-user && \
 sudo chown lab-user /home/lab-user/*.pem && \
 sudo chmod 660 /home/lab-user/*.pem && \
 cd /home/lab-user &&
