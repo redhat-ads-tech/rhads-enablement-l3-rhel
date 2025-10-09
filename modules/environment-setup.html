@@ -47,34 +47,10 @@
     <a class="nav-link" href="environment-setup.html">Environment Setup</a>
   </li>
   <li class="nav-item" data-depth="1">
-    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="trusted-artifact-signer.html">1. Installing and Configuring Red Hat Trusted Artifact Signer on RHEL</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-artifact-signer.html#prerequisites">Prerequisites</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-artifact-signer.html#installation">Installation</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-artifact-signer.html#configuration">Configuration</a>
-  </li>
-</ul>
   </li>
   <li class="nav-item" data-depth="1">
-    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="trusted-profile-analyzer.html">2. Installing and Configuring Red Hat Trusted Profile Analyzer on RHEL</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-profile-analyzer.html#prerequisites">Prerequisites</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-profile-analyzer.html#installation">Installation</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-profile-analyzer.html#configuration">Configuration</a>
-  </li>
-</ul>
   </li>
 </ul>
   </li>
@@ -144,10 +120,10 @@
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" &amp;&amp; \
 cd $TMPDIR &amp;&amp; \
-sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtpa.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' &amp;&amp; \
+sudo csplit -z -f cert- -b %02d.pem /etc/letsencrypt/live/rhtas.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' &amp;&amp; \
 sudo cat cert-00.pem cert-01.pem &gt; /home/lab-user/server.pem &amp;&amp; \
 sudo cat cert-02.pem &gt; /home/lab-user/root.pem &amp;&amp; \
-sudo cp /etc/letsencrypt/live/rhtpa.{base_hostname}/privkey.pem /home/lab-user &amp;&amp; \
+sudo cp /etc/letsencrypt/live/rhtas.{base_hostname}/privkey.pem /home/lab-user &amp;&amp; \
 sudo chown lab-user /home/lab-user/*.pem &amp;&amp; \
 sudo chmod 660 /home/lab-user/*.pem &amp;&amp; \
 cd /home/lab-user &amp;&amp;

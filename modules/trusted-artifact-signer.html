@@ -47,34 +47,10 @@
     <a class="nav-link" href="environment-setup.html">Environment Setup</a>
   </li>
   <li class="nav-item is-current-page" data-depth="1">
-    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="trusted-artifact-signer.html">1. Installing and Configuring Red Hat Trusted Artifact Signer on RHEL</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="#prerequisites">Prerequisites</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="#installation">Installation</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="#configuration">Configuration</a>
-  </li>
-</ul>
   </li>
   <li class="nav-item" data-depth="1">
-    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="trusted-profile-analyzer.html">2. Installing and Configuring Red Hat Trusted Profile Analyzer on RHEL</a>
-<ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-profile-analyzer.html#prerequisites">Prerequisites</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-profile-analyzer.html#installation">Installation</a>
-  </li>
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="trusted-profile-analyzer.html#configuration">Configuration</a>
-  </li>
-</ul>
   </li>
 </ul>
   </li>
@@ -532,6 +508,31 @@ rhtas                      : ok=262  changed=114  unreachable=0    failed=0    s
 <p>+
 If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct.</p>
 </div>
+<div class="paragraph">
+<p>To see the running services on the <code>rhtas</code> node, run the following command:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas sudo "podman pod ps --filter status=running"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will run the <code>podman pod ps</code> command on the <code>rhtas</code> node. You should see a number of pods for each of the services that were installed for RHTAS, including <code>rekor</code>, <code>rekor-search</code>, <code>fulcio</code>, <code>tuf</code>, <code>ctlog</code>, <code>cli-server</code>, <code>trillian</code>, and <code>nginx</code>. To see the log files for the <code>rekor</code> service, run the following command:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas "sudo podman pod logs -f rekor-server-pod"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Press <kbd>CTRL-C</kbd> (or <kbd>CMD-C</kbd> on MacOS) to exit the log output. This can be useful for debugging issues with the RHTAS installation.</p>
+</div>
 </div>
 </div>
 </div>
@@ -634,7 +635,7 @@ rm ./tmp.Dockerfile</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p>Username: <code>{rhtas_user1_password}</code></p>
+<p>Username: <code>{rhtas_user1_username}</code></p>
 </li>
 <li>
 <p>Password: <code>{rhtas_user1_password}</code></p>
@@ -702,7 +703,7 @@ rm ./tmp.Dockerfile</code></pre>
 <p>To verify, Cosign queries the transparency log (Rekor) to compare the public key bound to the certificate, and checks the timestamp on the signature against the artifact&#8217;s entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid.</p>
 </div>
 <div class="paragraph">
-<p>If successful, you should see the following output:</p>
+<p>If successful, you should see the following output (at the start, before the JSON representation of the signature):</p>
 </div>
 <div class="listingblock">
 <div class="content">
