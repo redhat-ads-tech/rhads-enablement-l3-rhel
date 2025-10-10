@@ -15,6 +15,8 @@ The automation contained in https://console.redhat.com/ansible/automation-hub/re
 * *Refreshing TUF metadata* (helping to maintain a secure coding environment for developers and prevent mix-and-match attacks on a code base).
 * *Certificate and key rotation* for Rekor, Certificate Transparency, Fulcio, and Timestamp Authority services (rotating these keys regularly can help prevent key tampering and theft.)
 
+For more detail and examples of performing day-1 and day-2 operations with RHTAS, consult the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer/1.3/html/administration_guide/rhtas-rhel-admin[RHTAS RHEL administration documentation^].
+
 === Components of RHTAS
 
 The RHTAS Ansible collection deploys the following RHTAS components onto the `rhtas` machine:
