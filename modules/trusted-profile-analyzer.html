@@ -140,7 +140,7 @@
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Ingests</strong> many Software Bill of Materials (SBOMs) - some that you create as part of your CI pipelines when building software artifacts, and some that are published by others (including Red Hat) that detail the content of their software. SBOMs have many facets, including the packages, their versions, and their dependencies. For more detail on SBOMs, volnerability data, and security data that Red Hat provides, see <a href="https://www.redhat.com/en/blog/future-red-hat-security-data" target="_blank" rel="noopener">The future of Red Hat security data</a>.</p>
+<p><strong>Ingests</strong> many Software Bill of Materials (SBOMs) - some that you create as part of your CI pipelines when building software artifacts, and some that are published by others (including Red Hat) that detail the content of their software. SBOMs have many facets, including the packages, their versions, and their dependencies. For more detail on SBOMs, vulnerability data, and security data that Red Hat provides, see <a href="https://www.redhat.com/en/blog/future-red-hat-security-data" target="_blank" rel="noopener">The future of Red Hat security data</a>.</p>
 </li>
 <li>
 <p><strong>Imports</strong> many <em>Vulnerabilities</em> and <em>Advisories</em> regarding known vulnerabilities in the global software supply chain</p>
@@ -584,7 +584,7 @@ Password: {common_password}</code></pre>
 </ul>
 </div>
 <div class="paragraph">
-<p>These run continously in the background, importing SBOMs and Advisories from public, well-known sources. By default, the Red Hat CSAF, Red Hat SBOM, and Quay data importers are disabled. These importers can run a long time before finishing, but you can enable any of these data importers at anytime. The Quay data importer scans the Quay registry looking for existing SBOMs for RHTPA to ingest and analyze.</p>
+<p>These run continuously in the background, importing SBOMs and Advisories from public, well-known sources. By default, the Red Hat CSAF, Red Hat SBOM, and Quay data importers are disabled. These importers can run a long time before finishing, but you can enable any of these data importers at anytime. The Quay data importer scans the Quay registry looking for existing SBOMs for RHTPA to ingest and analyze.</p>
 </div>
 <div class="paragraph">
 <p>So you see out of the box are thousands of known advisories and vulnerabilities (click on the <em>Vulnerabilities</em> and <em>Advisories</em> tabs to see them), but no SBOMs. Let&#8217;s ingest the simplest possible SBOM to demonstrate how you can ingest your own SBOMs as part of your CI pipelines.</p>
@@ -621,7 +621,7 @@ podman push ttl.sh/rhtas/test-image-$GUID:3h</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulunerabilities.</p>
+<p>This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulnerabilities.</p>
 </div>
 </li>
 </ol>
@@ -644,7 +644,7 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 </div>
 </div>
 <div class="paragraph">
-<p>The last <code>oidc-cli</code> command creates a short-livedconfidential client session in Keycloak for you to use to authenticate to the RHTPA API.</p>
+<p>The last <code>oidc-cli</code> command creates a short-lived confidential client session in Keycloak for you to use to authenticate to the RHTPA API.</p>
 </div>
 </li>
 <li>
@@ -669,7 +669,7 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 </div>
 </div>
 <div class="paragraph">
-<p>The output contains a unique ID for the entry and the ingested SBOM. Head back to the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, reload the pageand you should how have 1 SBOM in the database:</p>
+<p>The output contains a unique ID for the entry and the ingested SBOM. Head back to the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, reload the page and you should how have 1 SBOM in the database:</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -741,7 +741,7 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 </div>
 </div>
 <div class="paragraph">
-<p>By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the <em>Importers</em> tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a litle while you&#8217;ll see more interesting results:</p>
+<p>By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the <em>Importers</em> tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you&#8217;ll see more interesting results:</p>
 </div>
 <div class="imageblock">
 <div class="content">
