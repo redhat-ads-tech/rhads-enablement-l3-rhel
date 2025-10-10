@@ -88,10 +88,10 @@ tpa_single_node_registry_password: "$REGISTRY_PASSWORD"
 tpa_single_node_pg_host: utility
 tpa_single_node_pg_port: 5532
 tpa_single_node_pg_db: rhtpa
-tpa_single_node_pg_admin: postgres
-tpa_single_node_pg_admin_passwd: rhtpaAdmin1234
-tpa_single_node_pg_user: rhtpa
-tpa_single_node_pg_user_passwd: rhtpa1234
+tpa_single_node_pg_admin: {tpa_single_node_pg_admin}
+tpa_single_node_pg_admin_passwd: {tpa_single_node_pg_admin_passwd}
+tpa_single_node_pg_user: {tpa_single_node_pg_user}
+tpa_single_node_pg_user_passwd: {tpa_single_node_pg_user_passwd}
 tpa_single_node_pg_ssl_mode: prefer
 
 # OIDC # <2>
@@ -290,19 +290,19 @@ Press kbd:[CTRL-C] (or kbd:[CMD-C] on MacOS) to exit the log output. This can be
 
 === Access the RHTPA web interface
 
-Access the https://rhtpa.${BASE_HOSTNAME}[RHTPA web interface^]. Login with the following credentials:
+Access the https://rhtpa.{BASE_HOSTNAME}[RHTPA web interface^]. Login with the following credentials:
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes", role="execute"]
 ----
 Username: {rhbk_admin_username}
-Password: {rhbk_admin_password}
+Password: {common_password}
 ----
 
 You should land on the RHTPA dashboard:
 
 image::rhtpa-dashboard.png[]
 
-Pretty boring, right? Out of the box, RHTPA comes configured with the following importer sources (you can see them by clicking on the _Importers_ tab):
+"_There is nothing here yet._" Pretty boring, right? Out of the box, RHTPA comes configured with the following importer sources (you can see them by clicking on the _Importers_ tab):
 
 * Red Hat CSAFs
 * Red Hat SBOMs
@@ -331,9 +331,10 @@ curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo
 echo "FROM scratch" > ./tmp.Dockerfile
 podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:3h
 rm ./tmp.Dockerfile
+podman push ttl.sh/rhtas/test-image-$GUID:3h
 ----
 
-. Run this command to generate a new SBOM in the SPDX version 2.3 format and output it in JSON format (and write it to a file with `tee`):
+. Run this command to generate a new SBOM in the https://spdx.github.io/spdx-spec/v2.3/[SPDX version 2.3 format^] and output it in JSON format (and write it to a file with `tee`):
 +
 [source,bash,role="execute"]
 ----
@@ -344,7 +345,7 @@ This is a super simple SBOM and since there are no packages (other than itself) 
 
 === Ingest the SBOM into RHTPA
 
-. You could use raw `curl` commands, but we'll use an Open ID Connect tool to handle the authentication. Install the tool with these commands:
+. RHTPA exposes an API that you can use to ingest SBOMs. You could use raw `curl` commands to do the ingestion, but we'll use an Open ID Connect tool called `oidc-cli`to handle the authentication. Install the tool with these commands:
 +
 [source,bash,role="execute"]
 ----
@@ -355,12 +356,14 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
          --client-id $KEYCLOAK_CLI_CLIENT_ID \
          --client-secret $OIDC_CLIENT_SECRET
 ----
++
+The last `oidc-cli` command creates a short-livedconfidential client session in Keycloak for you to use to authenticate to the RHTPA API.
 
 . Ingest the SBOM into RHTPA:
 +
 [source,bash,role="execute"]
 ----
-curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d /tmp/test-sbom.json https://rhtpa.$BASE_HOSTNAME/api/v2/sbom
+curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @/tmp/test-sbom.json https://rhtpa.$BASE_HOSTNAME/api/v2/sbom
 ----
 +
 This uses the `/api/v2/sbom` endpoint exposed by RHTPA to ingest the SBOM (which you can do in your own CI pipelines). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the _API_ tab (which takes you to the https://rhtpa.{base_hostname}/openapi[OpenAPI specification^] for RHTPA endpoints). For more detail the kinds of things you can do with the API, see the https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer/2.1/html-single/rest_api/index[RHTPA REST API documentation^].
@@ -375,7 +378,7 @@ You should see something like:
 }
 ----
 +
-The output contains a unique ID for the entry and the ingested SBOM. Head back to the RHTPA web interface and you should how have 1 SBOM in the database:
+The output contains a unique ID for the entry and the ingested SBOM. Head back to the https://rhtpa.{base_hostname}[RHTPA web interface^], reload the pageand you should how have 1 SBOM in the database:
 +
 image::rhtpa-sbom-ingested.png[]
 
@@ -385,7 +388,9 @@ image::rhtpa-sbom-details.png[]
 +
 You should see the SBOM details, including the packages and their vulnerabilities.
 +
-This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the _API_ tab (which takes you to the https://rhtpa.{base_hostname}/openapi[OpenAPI specification^] for RHTPA endpoints).
+This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the _API_ tab (which takes you to the https://rhtpa.{base_hostname}/openapi[OpenAPI specification^] for RHTPA endpoints):
+
+::image::rhtpa-api.png[]
 
 === Ingest a More Interesting SBOM
 
@@ -402,7 +407,7 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 +
 You will see a giant JSON object of the resulting SBOM (and there will be lots of `Invalid reference` messages as none of of the packages are known to our mostly empty SBOM database). But back on the RHTPA web interface, click on _SBOMs_ and you should see the new SBOM in the database:
 +
-image::rhtpa-sbom-ingested.png[]
+image::rhtpa-sbom-ingested2.png[]
 
 . Click on the _Vulnerabilities_ tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).
 +
@@ -414,9 +419,14 @@ You can also search for vulnerabilities, sboms, or any other object by using the
 +
 image::rhtpa-search.png[]
 +
-By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers to see what a larger set of SBOMs and vulnerabilities look like:
+By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the _Importers_ tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a litle while you'll see more interesting results:
 +
-image::rhtpa-importers.png[]
+image::rhtpa-importer-enable.png[]
+
+image::rhtpa-dashboard2.png[]
+
+image::rhtpa-dashboard3.png[]
+
 
 == Next Steps
 
