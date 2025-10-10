@@ -409,17 +409,15 @@ You will see a giant JSON object of the resulting SBOM (and there will be lots o
 +
 image::rhtpa-sbom-ingested2.png[]
 
-. Click on the _Vulnerabilities_ tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).
+. Click on the name of the SBOM. Click on the _Vulnerabilities_ tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).
 +
 image::rhtpa-vulnerabilities.png[]
 +
-You can also search for vulnerabilities, sboms, or any other object by using the search bar at the top of the page.
-
-. Try typing in `httpd` to see the various packages, sboms, and any vulnerabilities that may exist.
+. You can also search for vulnerabilities, sboms, or any other object by using the search feature. Click on _Search_ at the left, and try typing in `httpd` to see the various packages, sboms, and any vulnerabilities that may exist:
 +
 image::rhtpa-search.png[]
 +
-By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the _Importers_ tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you'll see more interesting results:
+By populating RHTPA with your own SBOMs as part of your CI pipelines _for each and every build_, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the _Importers_ tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you'll see more interesting results:
 +
 image::rhtpa-importer-enable.png[]
 
