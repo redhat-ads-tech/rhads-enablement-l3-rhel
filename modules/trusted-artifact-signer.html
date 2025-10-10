@@ -102,7 +102,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Red Hat Trusted Artifact Signer is a comprehensive solution for signing and verifying software artifacts to ensure their integrity and authenticity. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.</p>
+<p><a href="https://access.redhat.com/products/red-hat-trusted-artifact-signer/" target="_blank" rel="noopener">Red Hat Trusted Artifact Signer</a> is a comprehensive solution for signing and verifying software artifacts to ensure their integrity and authenticity. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.</p>
 </div>
 </div>
 </div>
@@ -278,10 +278,10 @@ tas_single_node_registry_username: "$REGISTRY_USERNAME"
 tas_single_node_registry_password: "$REGISTRY_PASSWORD"
 
 # Certificates <i class="conum" data-value="2"></i><b>(2)</b>
-tas_ingress_certificate_root_ca_file: "/home/lab-user/root.pem"
-tas_ingress_certificate_root_key_file: "/home/lab-user/privkey.pem"
-tas_ingress_certificate_cert_file: "/home/lab-user/server.pem"
-tas_ingress_certificate_key_file: "/home/lab-user/privkey.pem"
+tas_ingress_certificate_root_ca_file: "/home/lab-user/rhtas-root.pem"
+tas_ingress_certificate_root_key_file: "/home/lab-user/rhtas-privkey.pem"
+tas_ingress_certificate_cert_file: "/home/lab-user/rhtas-server.pem"
+tas_ingress_certificate_key_file: "/home/lab-user/rhtas-privkey.pem"
 
 
 # OIDC Configuration <i class="conum" data-value="3"></i><b>(3)</b>
@@ -422,27 +422,27 @@ EOF</code></pre>
 <div class="ulist">
 <ul>
 <li>
+<p><code>rhtas_vars.yml</code> - The Ansible variables file to use with RHTAS configuration</p>
+</li>
+<li>
 <p><code>install_rhtas.yml</code> - The Ansible playbook to install RHTAS</p>
 </li>
 <li>
 <p><code>inventory</code> - The inventory file to use specifying which hosts to use</p>
 </li>
 <li>
-<p><code>privkey.pem</code> - The private key for the TLS certificates</p>
+<p><code>rhtas-privkey.pem</code> - The private key for the TLS certificates for RHTAS</p>
 </li>
 <li>
-<p><code>rhtas_vars.yml</code> - The Ansible variables file to use with RHTAS configuration</p>
+<p><code>rhtas-root.pem</code> - The root TLS signed certificate for RHTAS</p>
 </li>
 <li>
-<p><code>root.pem</code> - The root TLS signed certificate</p>
-</li>
-<li>
-<p><code>server.pem</code> - The server certificate</p>
+<p><code>rhtas-server.pem</code> - The server certificate for RHTAS</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>If you do not have these files, please go back and review the previous steps. If you do have the files, you can continue with the next step.</p>
+<p>There may be other files (e.g. the <code>rhtpa-</code> files used later for RHTPA), but these are the ones you should have. If you do not have these files, please go back and review the previous steps. If you do have the files, you can continue with the next step.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -688,7 +688,7 @@ rm ./tmp.Dockerfile</code></pre>
 </div>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export EMAIL_ADDRESS="chris@redhat.com"</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export EMAIL_ADDRESS="{rhtas_user1_username}@redhat.com"</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -717,8 +717,17 @@ rm ./tmp.Dockerfile</code></pre>
 <p>Along with the JSON representation of the signature.</p>
 </div>
 </li>
+</ol>
+</div>
+<div class="sect3">
+<h4 id="_query_the_transparency_log"><a class="anchor" href="#_query_the_transparency_log"></a>Query the Transparency Log</h4>
+<div class="paragraph">
+<p>You can query the transparency log to prove authenticity, integrity, and accountability for software artifacts. This ensures that the artifact was built and signed by a trusted party and hasn&#8217;t been tampered with. It also provides a record of the signing process for audit purposes, and helps determine whether malicious or unauthorized versions were introduced into the supply chain. We&#8217;ll query it in a few different ways in the following steps.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>Now lets query the transparency log by using the Rekor command-line interface. Download the rekor-cli binary from the CLI server:</p>
+<p>To start, download the rekor-cli binary from the CLI server:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L $CLI_SERVER_URL/clients/linux/rekor-cli-amd64.gz | gunzip &gt; rekor-cli
@@ -761,8 +770,28 @@ sudo chmod +x rekor-cli &amp;&amp; sudo mv rekor-cli /usr/local/bin/rekor-cli</c
 </li>
 </ol>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Rekor also includes a <a href="https://rekor-search.{base_hostname}" target="_blank" rel="noopener">web search interface</a> for searching through the log entries. Try it out by selecting "Email" attribute to search but and enter <code>{rhtas_user1_username}@redhat.com</code> into the email address field and press the <code>Search</code> button. You should see the a log entry for the container image you signed:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/rhtas-rekor-search.png" alt="rhtas rekor search">
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>These methods (and others) can be used in CI pipelines to verify the authenticity of the artifacts during build, promotion, and deployment.</p>
+</div>
 </div>
 </div>
 <div class="sect2">
