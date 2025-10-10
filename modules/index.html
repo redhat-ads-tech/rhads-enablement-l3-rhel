@@ -135,6 +135,9 @@
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>On RHEL, TAS and TPA are deployed as podman pods (so some concepts from Kubernetes like Deployments, ConfigMaps, etc apply), and are configured as system services (via <code>systemd</code>) that are managed through traditional RHEL administration tools and processes, including security (firewall, SELinux, etc.) and networking (firewall, routing, etc.). You can use the provided Ansible playbooks to do administrative tasks like backup/restore, key rotation, and more.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_benefits_of_rhtas_on_rhel"><a class="anchor" href="#_benefits_of_rhtas_on_rhel"></a>Benefits of RHTAS on RHEL</h3>
@@ -242,6 +245,9 @@
 </div>
 <div class="paragraph">
 <p>Keycloak has been pre-configured with the <code>trusted-artifact-signer</code> realm (used for TAS) and <code>chicken</code> realm (used for TPA). By clicking on <em>Manage Realms</em> you can switch between the two realms, and click on <em>Users</em>  to view the predefined users in each realm (these realms, clients, and users will be used in the exercises). Feel free to explore the other sections of the Keycloak admin console, but try not to change anything until after you have completed the exercises!</p>
+</div>
+<div class="paragraph">
+<p>::image::keycloak-admin-console.png[]</p>
 </div>
 </div>
 </div>

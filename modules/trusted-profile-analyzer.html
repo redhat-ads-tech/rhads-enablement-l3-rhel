@@ -246,10 +246,10 @@ tpa_single_node_registry_password: "$REGISTRY_PASSWORD"
 tpa_single_node_pg_host: utility
 tpa_single_node_pg_port: 5532
 tpa_single_node_pg_db: rhtpa
-tpa_single_node_pg_admin: postgres
-tpa_single_node_pg_admin_passwd: rhtpaAdmin1234
-tpa_single_node_pg_user: rhtpa
-tpa_single_node_pg_user_passwd: rhtpa1234
+tpa_single_node_pg_admin: {tpa_single_node_pg_admin}
+tpa_single_node_pg_admin_passwd: {tpa_single_node_pg_admin_passwd}
+tpa_single_node_pg_user: {tpa_single_node_pg_user}
+tpa_single_node_pg_user_passwd: {tpa_single_node_pg_user_passwd}
 tpa_single_node_pg_ssl_mode: prefer
 
 # OIDC <i class="conum" data-value="2"></i><b>(2)</b>
@@ -545,24 +545,24 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 <div class="sect2">
 <h3 id="_access_the_rhtpa_web_interface"><a class="anchor" href="#_access_the_rhtpa_web_interface"></a>Access the RHTPA web interface</h3>
 <div class="paragraph">
-<p>Access the <a href="https://rhtpa.${BASE_HOSTNAME}" target="_blank" rel="noopener">RHTPA web interface</a>. Login with the following credentials:</p>
+<p>Access the <a href="https://rhtpa.{BASE_HOSTNAME}" target="_blank" rel="noopener">RHTPA web interface</a>. Login with the following credentials:</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">Username: {rhbk_admin_username}
-Password: {rhbk_admin_password}</code></pre>
+Password: {common_password}</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>You should land on the RHTPA dashboard:</p>
 </div>
-<div class="imageblock unresolved">
+<div class="imageblock">
 <div class="content">
-<img src="rhtpa-dashboard.png" alt="rhtpa dashboard">
+<img src="_images/rhtpa-dashboard.png" alt="rhtpa dashboard">
 </div>
 </div>
 <div class="paragraph">
-<p>Pretty boring, right? Out of the box, RHTPA comes configured with the following importer sources (you can see them by clicking on the <em>Importers</em> tab):</p>
+<p>"<em>There is nothing here yet.</em>" Pretty boring, right? Out of the box, RHTPA comes configured with the following importer sources (you can see them by clicking on the <em>Importers</em> tab):</p>
 </div>
 <div class="ulist">
 <ul>
@@ -608,12 +608,13 @@ Password: {rhbk_admin_password}</code></pre>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "FROM scratch" &gt; ./tmp.Dockerfile
 podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:3h
-rm ./tmp.Dockerfile</code></pre>
+rm ./tmp.Dockerfile
+podman push ttl.sh/rhtas/test-image-$GUID:3h</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Run this command to generate a new SBOM in the SPDX version 2.3 format and output it in JSON format (and write it to a file with <code>tee</code>):</p>
+<p>Run this command to generate a new SBOM in the <a href="https://spdx.github.io/spdx-spec/v2.3/" target="_blank" rel="noopener">SPDX version 2.3 format</a> and output it in JSON format (and write it to a file with <code>tee</code>):</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">syft ttl.sh/rhtas/test-image-$GUID:3h -o spdx-json@2.3 | tee /tmp/test-sbom.json | jq</code></pre>
@@ -631,7 +632,7 @@ rm ./tmp.Dockerfile</code></pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>You could use raw <code>curl</code> commands, but we&#8217;ll use an Open ID Connect tool to handle the authentication. Install the tool with these commands:</p>
+<p>RHTPA exposes an API that you can use to ingest SBOMs. You could use raw <code>curl</code> commands to do the ingestion, but we&#8217;ll use an Open ID Connect tool called `oidc-cli`to handle the authentication. Install the tool with these commands:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L -o /tmp/oidc-cli https://github.com/ctron/oidc-cli/releases/download/v0.6.2/oidc-x86_64-unknown-linux-gnu &amp;&amp; \
@@ -642,12 +643,15 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
          --client-secret $OIDC_CLIENT_SECRET</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>The last <code>oidc-cli</code> command creates a short-livedconfidential client session in Keycloak for you to use to authenticate to the RHTPA API.</p>
+</div>
 </li>
 <li>
 <p>Ingest the SBOM into RHTPA:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d /tmp/test-sbom.json https://rhtpa.$BASE_HOSTNAME/api/v2/sbom</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @/tmp/test-sbom.json https://rhtpa.$BASE_HOSTNAME/api/v2/sbom</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -665,29 +669,32 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 </div>
 </div>
 <div class="paragraph">
-<p>The output contains a unique ID for the entry and the ingested SBOM. Head back to the RHTPA web interface and you should how have 1 SBOM in the database:</p>
+<p>The output contains a unique ID for the entry and the ingested SBOM. Head back to the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, reload the pageand you should how have 1 SBOM in the database:</p>
 </div>
-<div class="imageblock unresolved">
+<div class="imageblock">
 <div class="content">
-<img src="rhtpa-sbom-ingested.png" alt="rhtpa sbom ingested">
+<img src="_images/rhtpa-sbom-ingested.png" alt="rhtpa sbom ingested">
 </div>
 </div>
 </li>
 <li>
 <p>Click on the name of the SBOM to see the details:</p>
-<div class="imageblock unresolved">
+<div class="imageblock">
 <div class="content">
-<img src="rhtpa-sbom-details.png" alt="rhtpa sbom details">
+<img src="_images/rhtpa-sbom-details.png" alt="rhtpa sbom details">
 </div>
 </div>
 <div class="paragraph">
 <p>You should see the SBOM details, including the packages and their vulnerabilities.</p>
 </div>
 <div class="paragraph">
-<p>This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the <em>API</em> tab (which takes you to the <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification</a> for RHTPA endpoints).</p>
+<p>This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the <em>API</em> tab (which takes you to the <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification</a> for RHTPA endpoints):</p>
 </div>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>::image::rhtpa-api.png[]</p>
 </div>
 </div>
 <div class="sect2">
@@ -709,17 +716,17 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 <div class="paragraph">
 <p>You will see a giant JSON object of the resulting SBOM (and there will be lots of <code>Invalid reference</code> messages as none of of the packages are known to our mostly empty SBOM database). But back on the RHTPA web interface, click on <em>SBOMs</em> and you should see the new SBOM in the database:</p>
 </div>
-<div class="imageblock unresolved">
+<div class="imageblock">
 <div class="content">
-<img src="rhtpa-sbom-ingested.png" alt="rhtpa sbom ingested">
+<img src="_images/rhtpa-sbom-ingested2.png" alt="rhtpa sbom ingested2">
 </div>
 </div>
 </li>
 <li>
 <p>Click on the <em>Vulnerabilities</em> tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).</p>
-<div class="imageblock unresolved">
+<div class="imageblock">
 <div class="content">
-<img src="rhtpa-vulnerabilities.png" alt="rhtpa vulnerabilities">
+<img src="_images/rhtpa-vulnerabilities.png" alt="rhtpa vulnerabilities">
 </div>
 </div>
 <div class="paragraph">
@@ -734,15 +741,25 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 </div>
 </div>
 <div class="paragraph">
-<p>By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers to see what a larger set of SBOMs and vulnerabilities look like:</p>
+<p>By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the <em>Importers</em> tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a litle while you&#8217;ll see more interesting results:</p>
 </div>
-<div class="imageblock unresolved">
+<div class="imageblock">
 <div class="content">
-<img src="rhtpa-importers.png" alt="rhtpa importers">
+<img src="_images/rhtpa-importer-enable.png" alt="rhtpa importer enable">
 </div>
 </div>
 </li>
 </ol>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/rhtpa-dashboard2.png" alt="rhtpa dashboard2">
+</div>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/rhtpa-dashboard3.png" alt="rhtpa dashboard3">
+</div>
 </div>
 </div>
 </div>
