@@ -135,7 +135,26 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>You can install RHTPA on Red Hat Enterprise Linux by using a Red Hat provided Ansible Playbook. This Ansible deployment of RHTPA allows you to specify your own PostgreSQL database, OpenID Connect (OIDC) provider, and a Simple Storage Service (S3) provider.</p>
+<p>Practically speaking, RHTPA is a service that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Ingests</strong> many Software Bill of Materials (SBOMs) - some that you create as part of your CI pipelines when building software artifacts, and some that are published by others (including Red Hat) that detail the content of their software. SBOMs have many facets, including the packages, their versions, and their dependencies. For more detail on SBOMs, volnerability data, and security data that Red Hat provides, see <a href="https://www.redhat.com/en/blog/future-red-hat-security-data" target="_blank" rel="noopener">The future of Red Hat security data</a>.</p>
+</li>
+<li>
+<p><strong>Imports</strong> many <em>Vulnerabilities</em> and <em>Advisories</em> regarding known vulnerabilities in the global software supply chain</p>
+</li>
+<li>
+<p><strong>Provides</strong> proactive risk analysis by combining/cross-referencing the two sources of data</p>
+</li>
+<li>
+<p><strong>Provides</strong> a web interface to view the risk profile of your software supply chain.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can install RHTPA on Red Hat Enterprise Linux by using a Red Hat provided Ansible Playbook. This Ansible deployment of RHTPA allows you to specify your own PostgreSQL database and OpenID Connect (OIDC) provider.</p>
 </div>
 <div class="paragraph">
 <p>This exercise will guide you through the process of installing and configuring RHTPA on RHEL. The environment has pre-installed the following components to support the installation:</p>
@@ -160,6 +179,9 @@
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_setup_environment_variables"><a class="anchor" href="#_setup_environment_variables"></a>Setup Environment Variables</h3>
+<div class="paragraph">
+<p>We need to define a few variables to point at the pre-installed Keycloak instance (including realm and client names and secrets).</p>
+</div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -169,9 +191,10 @@
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export GUID=my-guid
 export BASE_HOSTNAME={base_hostname}
 export KEYCLOAK_REALM=chicken # yes, it really is chicken 🐔
+export KEYCLOAK_CLI_CLIENT_ID=cli
 export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
 export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
-export OIDC_CLIENT_SECRET=5460cc91-4e20-4edd-881c-b15b169f8a79</code></pre>
+export OIDC_CLIENT_SECRET={rhbk_admin_password}</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -179,7 +202,7 @@ export OIDC_CLIENT_SECRET=5460cc91-4e20-4edd-881c-b15b169f8a79</code></pre>
 </div>
 </li>
 <li>
-<p>Next, run these two commands, replacing the username and password or service account token with your own (don&#8217;t just copy-paste, you&#8217;ll need to replace the placeholders with your own values):</p>
+<p>Next, make sure you have access to the Red Hat Registry. Run these two commands separately, replacing the username and password or service account token with your own (don&#8217;t just copy-paste, you&#8217;ll need to replace the placeholders with your own values):</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export REGISTRY_USERNAME='&lt;your username&gt;'
@@ -232,7 +255,7 @@ tpa_single_node_pg_ssl_mode: prefer
 # OIDC <i class="conum" data-value="2"></i><b>(2)</b>
 tpa_single_node_oidc_issuer_url: "$OIDC_ISSUER_URL"
 tpa_single_node_oidc_frontend_id: frontend
-tpa_single_node_oidc_client_id: cli
+tpa_single_node_oidc_client_id: "$KEYCLOAK_CLI_CLIENT_ID"
 tpa_single_node_oidc_client_secret: "$OIDC_CLIENT_SECRET"
 
 # Podman Configurations <i class="conum" data-value="3"></i><b>(3)</b>
@@ -462,15 +485,15 @@ ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
 </tr>
 <tr>
 <td><i class="conum" data-value="8"></i><b>8</b></td>
-<td>The inventory file to use
-<div class="paragraph">
-<p>The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:</p>
-</div></td>
+<td>The inventory file to use</td>
 </tr>
 </table>
 </div>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -479,14 +502,16 @@ rhtpa                      : ok=50   changed=14   unreachable=0    failed=0    s
 </div>
 </div>
 <div class="paragraph">
-<p>+
-If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct.</p>
+<p>If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct, then run the <code>ansible-navigator</code> command again.</p>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify_trusted_profile_analyzer_installation"><a class="anchor" href="#_verify_trusted_profile_analyzer_installation"></a>Verify Trusted Profile Analyzer installation</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>To see the running services on the <code>rhtpa</code> node, run the following command:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
@@ -496,9 +521,6 @@ If you see any errors, scroll up and check for errors in the output. Confirm the
 <div class="paragraph">
 <p>You should see:</p>
 </div>
-<div class="paragraph">
-<p>+</p>
-</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">POD ID        NAME          STATUS      CREATED         INFRA ID      # OF CONTAINERS
@@ -507,13 +529,10 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 </div>
 </div>
 <div class="paragraph">
-<p>The <code>importer-pod</code> is the pod for the importer service, exposing REST APIs to support operations for ingesting and retrieving supply-chain data. The <code>server-pod</code> exposes the main API for the RHTPA service, supporting the web interface and API for evaluating the risk profile of your software supply chain.</p>
+<p>The <code>importer-pod</code> is the pod for the importer service which supports operations for ingesting and retrieving supply-chain data. The <code>server-pod</code> exposes the main API for the RHTPA service, supporting the web interface and API for evaluating the risk profile of your software supply chain which we&#8217;ll explore later.</p>
 </div>
 <div class="paragraph">
 <p>You can also retrieve logs of the services (e.g. the server service) by running the following command:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
 </div>
 <div class="listingblock execute">
 <div class="content">
@@ -523,14 +542,208 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 <div class="paragraph">
 <p>Press <kbd>CTRL-C</kbd> (or <kbd>CMD-C</kbd> on MacOS) to exit the log output. This can be useful for debugging issues with the RHTPA installation.</p>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_verify_trusted_profile_analyzer_installation"><a class="anchor" href="#_verify_trusted_profile_analyzer_installation"></a>Verify Trusted Profile Analyzer installation</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_access_the_rhtpa_web_interface"><a class="anchor" href="#_access_the_rhtpa_web_interface"></a>Access the RHTPA web interface</h3>
 <div class="paragraph">
-<p>TBD</p>
+<p>Access the <a href="https://rhtpa.${BASE_HOSTNAME}" target="_blank" rel="noopener">RHTPA web interface</a>. Login with the following credentials:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">Username: {rhbk_admin_username}
+Password: {rhbk_admin_password}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should land on the RHTPA dashboard:</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="rhtpa-dashboard.png" alt="rhtpa dashboard">
+</div>
+</div>
+<div class="paragraph">
+<p>Pretty boring, right? Out of the box, RHTPA comes configured with the following importer sources (you can see them by clicking on the <em>Importers</em> tab):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Red Hat CSAFs</p>
+</li>
+<li>
+<p>Red Hat SBOMs</p>
+</li>
+<li>
+<p>Common Vulnerability and Exposure (CVE) list version 5</p>
+</li>
+<li>
+<p>The GitHub advisory database</p>
+</li>
+<li>
+<p>Quay</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These run continously in the background, importing SBOMs and Advisories from public, well-known sources. By default, the Red Hat CSAF, Red Hat SBOM, and Quay data importers are disabled. These importers can run a long time before finishing, but you can enable any of these data importers at anytime. The Quay data importer scans the Quay registry looking for existing SBOMs for RHTPA to ingest and analyze.</p>
+</div>
+<div class="paragraph">
+<p>So you see out of the box are thousands of known advisories and vulnerabilities (click on the <em>Vulnerabilities</em> and <em>Advisories</em> tabs to see them), but no SBOMs. Let&#8217;s ingest the simplest possible SBOM to demonstrate how you can ingest your own SBOMs as part of your CI pipelines.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_your_first_sbom"><a class="anchor" href="#_create_your_first_sbom"></a>Create your first SBOM</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>First, you&#8217;ll need a tool to create SBOMs. We&#8217;ll use <a href="https://github.com/anchore/syft" target="_blank" rel="noopener">Syft</a> (an open source tool for creating SBOMs) for this exercise. Run the following command to install <code>syft</code>:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a test container image for which we&#8217;ll create an SBOM. Create the image with this command:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "FROM scratch" &gt; ./tmp.Dockerfile
+podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:3h
+rm ./tmp.Dockerfile</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run this command to generate a new SBOM in the SPDX version 2.3 format and output it in JSON format (and write it to a file with <code>tee</code>):</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">syft ttl.sh/rhtas/test-image-$GUID:3h -o spdx-json@2.3 | tee /tmp/test-sbom.json | jq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulunerabilities.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ingest_the_sbom_into_rhtpa"><a class="anchor" href="#_ingest_the_sbom_into_rhtpa"></a>Ingest the SBOM into RHTPA</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>You could use raw <code>curl</code> commands, but we&#8217;ll use an Open ID Connect tool to handle the authentication. Install the tool with these commands:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L -o /tmp/oidc-cli https://github.com/ctron/oidc-cli/releases/download/v0.6.2/oidc-x86_64-unknown-linux-gnu &amp;&amp; \
+chmod a+x /tmp/oidc-cli &amp;&amp; \
+sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli &amp;&amp; \
+oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
+         --client-id $KEYCLOAK_CLI_CLIENT_ID \
+         --client-secret $OIDC_CLIENT_SECRET</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ingest the SBOM into RHTPA:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d /tmp/test-sbom.json https://rhtpa.$BASE_HOSTNAME/api/v2/sbom</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This uses the <code>/api/v2/sbom</code> endpoint exposed by RHTPA to ingest the SBOM (which you can do in your own CI pipelines). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the <em>API</em> tab (which takes you to the <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification</a> for RHTPA endpoints). For more detail the kinds of things you can do with the API, see the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer/2.1/html-single/rest_api/index" target="_blank" rel="noopener">RHTPA REST API documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>You should see something like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "id": "urn:uuid:0199cec3-82f5-78e3-816a-3187171bf8eb",
+  "document_id": "https://anchore.com/syft/image/ttl.sh/rhtas/test-image-d8r4x-d71421e3-55d0-4028-a062-bb7ce9c55fd3"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output contains a unique ID for the entry and the ingested SBOM. Head back to the RHTPA web interface and you should how have 1 SBOM in the database:</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="rhtpa-sbom-ingested.png" alt="rhtpa sbom ingested">
+</div>
+</div>
+</li>
+<li>
+<p>Click on the name of the SBOM to see the details:</p>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="rhtpa-sbom-details.png" alt="rhtpa sbom details">
+</div>
+</div>
+<div class="paragraph">
+<p>You should see the SBOM details, including the packages and their vulnerabilities.</p>
+</div>
+<div class="paragraph">
+<p>This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the <em>API</em> tab (which takes you to the <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification</a> for RHTPA endpoints).</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ingest_a_more_interesting_sbom"><a class="anchor" href="#_ingest_a_more_interesting_sbom"></a>Ingest a More Interesting SBOM</h3>
+<div class="paragraph">
+<p>Let&#8217;s try again with a more interesting SBOM. We&#8217;ll use the <code>registry.redhat.io/rhel10/httpd-24</code> image, which is a Red Hat Enterprise Linux 10 image with the HTTPD package installed.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Run the following command to generate the SBOM and ingest it into RHTPA in one command:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">syft registry.redhat.io/rhel10/httpd-24 -o spdx-json@2.3 | \
+curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
+  https://rhtpa.$BASE_HOSTNAME/api/v2/sbom | jq</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You will see a giant JSON object of the resulting SBOM (and there will be lots of <code>Invalid reference</code> messages as none of of the packages are known to our mostly empty SBOM database). But back on the RHTPA web interface, click on <em>SBOMs</em> and you should see the new SBOM in the database:</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="rhtpa-sbom-ingested.png" alt="rhtpa sbom ingested">
+</div>
+</div>
+</li>
+<li>
+<p>Click on the <em>Vulnerabilities</em> tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).</p>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="rhtpa-vulnerabilities.png" alt="rhtpa vulnerabilities">
+</div>
+</div>
+<div class="paragraph">
+<p>You can also search for vulnerabilities, sboms, or any other object by using the search bar at the top of the page.</p>
+</div>
+</li>
+<li>
+<p>Try typing in <code>httpd</code> to see the various packages, sboms, and any vulnerabilities that may exist.</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/rhtpa-search.png" alt="rhtpa search">
+</div>
+</div>
+<div class="paragraph">
+<p>By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers to see what a larger set of SBOMs and vulnerabilities look like:</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="rhtpa-importers.png" alt="rhtpa importers">
+</div>
+</div>
+</li>
+</ol>
+</div>
 </div>
 </div>
 </div>
@@ -543,15 +756,24 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 <div class="ulist">
 <ul>
 <li>
-<p>Ingest software supply chain data</p>
+<p>Deploy applications with fewer vulnerabilities</p>
 </li>
 <li>
-<p>Evaluate the risk profile of your software supply chain</p>
+<p>Meet compliance regulations for SBOM management and archiving</p>
+</li>
+<li>
+<p>Know that trusted components are in use as early as possible</p>
+</li>
+<li>
+<p>Reduce alert fatigue with fewer false positive by getting vendor vulnerability information from the actual vendor (VEX)</p>
+</li>
+<li>
+<p>Analyze applications without downloading and installing</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>For more advanced configuration options and day-2 operation capabilities on RHEL, refer to the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer" target="_blank" rel="noopener">official Red Hat Trusted Profile Analyzer documentation</a>.</p>
+<p>For more advanced configuration options (e.g. enabling OpenTelemetry tracing and metrics) and day-2 operation capabilities on RHEL, refer to the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer" target="_blank" rel="noopener">official Red Hat Trusted Profile Analyzer documentation</a>.</p>
 </div>
 </div>
 </div>

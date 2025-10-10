@@ -120,8 +120,49 @@
 </li>
 </ul>
 </div>
+<div class="sect2">
+<h3 id="_rhel_vs_openshift"><a class="anchor" href="#_rhel_vs_openshift"></a>RHEL vs. OpenShift</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>On RHEL, you generally install TAS and TPA "directly" (e.g. via Ansible, system services, configuring components) as a more “traditional” server deployment.</p>
+</li>
+<li>
+<p>On OpenShift, TAS and TPA are deployed via an Operator / Operator Lifecycle Manager (OLM) model, leveraging the Kubernetes-style control plane for lifecycle, scaling, multi-tenancy, and orchestration.</p>
+</li>
+<li>
+<p>Thus, many operational concerns (scaling, upgrades, dependency wiring, multi-pod management, certificate handling, service routing) are handled differently (and more declaratively) in the OpenShift setup.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_benefits_of_rhtas_on_rhel"><a class="anchor" href="#_benefits_of_rhtas_on_rhel"></a>Benefits of RHTAS on RHEL</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Full control over installation and configuration (manual or Ansible-driven).</p>
+</li>
+<li>
+<p>Can run on bare metal or virtual machines without needing a Kubernetes/OpenShift cluster.</p>
+</li>
+<li>
+<p>Lighter footprint — no cluster orchestration overhead.</p>
+</li>
+<li>
+<p>Easier to integrate into traditional infrastructure environments.</p>
+</li>
+<li>
+<p>Flexible for custom setups (networking, databases, identity providers).</p>
+</li>
+<li>
+<p>Good for smaller deployments or environments without container platforms.</p>
+</li>
+</ul>
+</div>
 <div class="paragraph">
 <p>For more information on RHTAS and RHTPA, consult the enablement courses for these solutions on OpenShift as part of the wider RHADS enablement series.</p>
+</div>
 </div>
 </div>
 </div>
@@ -185,6 +226,22 @@
 <p><strong>Utility Machine</strong>: (hostname: <code>utility</code>) Contains Red Hat Build of Keycloak pre-installed and pre-configured as an OpenID Connect provider for authentication and authorization across all components. It also includes vanilla instances of PostgreSQL for use by Keycloak, RHTAS and RHTPA.</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>To check out the Keycloak configuration, navigate to the <a href="https://rhbk.{base_hostname}" target="_blank" rel="noopener">Keycloak admin console</a> and login with the following credentials:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Username: <code>{rhbk_admin_username}</code></p>
+</li>
+<li>
+<p>Password: <code>{rhbk_admin_password}</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Keycloak has been pre-configured with the <code>trusted-artifact-signer</code> realm (used for TAS) and <code>chicken</code> realm (used for TPA). By clicking on <em>Manage Realms</em> you can switch between the two realms, and click on <em>Users</em>  to view the predefined users in each realm (these realms, clients, and users will be used in the exercises). Feel free to explore the other sections of the Keycloak admin console, but try not to change anything until after you have completed the exercises!</p>
 </div>
 </div>
 </div>
