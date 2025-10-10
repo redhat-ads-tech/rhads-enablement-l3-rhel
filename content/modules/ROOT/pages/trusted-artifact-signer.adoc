@@ -262,7 +262,7 @@ To see the running services on the `rhtas` node, run the following command:
 ssh rhtas sudo "podman pod ps --filter status=running"
 ----
 
-This will run the `podman pod ps` command on the `rhtas` node. You should see a number of pods for each of the services that were installed for RHTAS, including `rekor`, `rekor-search`, `fulcio`, `tuf`, `ctlog`, `cli-server`, `trillian`, and `nginx`. To see the log files for the `rekor` service, run the following command:
+This will run the `podman pod ps` command on the `rhtas` node. You should see a number of pods for each of the services that were installed for RHTAS, including `rekor`, `rekor-search`, `fulcio`, `tuf`, `tlog`, `cli-server`, `trillian`, and `nginx`. To see the log files for the `rekor` service, run the following command:
 +
 [source,bash,role="execute"]
 ----

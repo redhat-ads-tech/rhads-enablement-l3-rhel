@@ -16,7 +16,7 @@ It addresses some of the problems developers and platform engineers face when ke
 
 Practically speaking, RHTPA is a service that:
 
-* *Ingests* many Software Bill of Materials (SBOMs) - some that you create as part of your CI pipelines when building software artifacts, and some that are published by others (including Red Hat) that detail the content of their software. SBOMs have many facets, including the packages, their versions, and their dependencies. For more detail on SBOMs, volnerability data, and security data that Red Hat provides, see https://www.redhat.com/en/blog/future-red-hat-security-data[The future of Red Hat security data^].
+* *Ingests* many Software Bill of Materials (SBOMs) - some that you create as part of your CI pipelines when building software artifacts, and some that are published by others (including Red Hat) that detail the content of their software. SBOMs have many facets, including the packages, their versions, and their dependencies. For more detail on SBOMs, vulnerability data, and security data that Red Hat provides, see https://www.redhat.com/en/blog/future-red-hat-security-data[The future of Red Hat security data^].
 * *Imports* many _Vulnerabilities_ and _Advisories_ regarding known vulnerabilities in the global software supply chain
 * *Provides* proactive risk analysis by combining/cross-referencing the two sources of data
 * *Provides* a web interface to view the risk profile of your software supply chain.
@@ -310,7 +310,7 @@ image::rhtpa-dashboard.png[]
 * The GitHub advisory database
 * Quay
 
-These run continously in the background, importing SBOMs and Advisories from public, well-known sources. By default, the Red Hat CSAF, Red Hat SBOM, and Quay data importers are disabled. These importers can run a long time before finishing, but you can enable any of these data importers at anytime. The Quay data importer scans the Quay registry looking for existing SBOMs for RHTPA to ingest and analyze.
+These run continuously in the background, importing SBOMs and Advisories from public, well-known sources. By default, the Red Hat CSAF, Red Hat SBOM, and Quay data importers are disabled. These importers can run a long time before finishing, but you can enable any of these data importers at anytime. The Quay data importer scans the Quay registry looking for existing SBOMs for RHTPA to ingest and analyze.
 
 So you see out of the box are thousands of known advisories and vulnerabilities (click on the _Vulnerabilities_ and _Advisories_ tabs to see them), but no SBOMs. Let's ingest the simplest possible SBOM to demonstrate how you can ingest your own SBOMs as part of your CI pipelines. 
 
@@ -341,7 +341,7 @@ podman push ttl.sh/rhtas/test-image-$GUID:3h
 syft ttl.sh/rhtas/test-image-$GUID:3h -o spdx-json@2.3 | tee /tmp/test-sbom.json | jq
 ----
 +
-This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulunerabilities.
+This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulnerabilities.
 
 === Ingest the SBOM into RHTPA
 
@@ -357,7 +357,7 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
          --client-secret $OIDC_CLIENT_SECRET
 ----
 +
-The last `oidc-cli` command creates a short-livedconfidential client session in Keycloak for you to use to authenticate to the RHTPA API.
+The last `oidc-cli` command creates a short-lived confidential client session in Keycloak for you to use to authenticate to the RHTPA API.
 
 . Ingest the SBOM into RHTPA:
 +
@@ -378,7 +378,7 @@ You should see something like:
 }
 ----
 +
-The output contains a unique ID for the entry and the ingested SBOM. Head back to the https://rhtpa.{base_hostname}[RHTPA web interface^], reload the pageand you should how have 1 SBOM in the database:
+The output contains a unique ID for the entry and the ingested SBOM. Head back to the https://rhtpa.{base_hostname}[RHTPA web interface^], reload the page and you should how have 1 SBOM in the database:
 +
 image::rhtpa-sbom-ingested.png[]
 
@@ -419,7 +419,7 @@ You can also search for vulnerabilities, sboms, or any other object by using the
 +
 image::rhtpa-search.png[]
 +
-By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the _Importers_ tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a litle while you'll see more interesting results:
+By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the _Importers_ tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you'll see more interesting results:
 +
 image::rhtpa-importer-enable.png[]
 
