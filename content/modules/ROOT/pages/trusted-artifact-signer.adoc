@@ -1,6 +1,6 @@
 = Installing and Configuring Red Hat Trusted Artifact Signer on RHEL
 
-Red Hat Trusted Artifact Signer is a comprehensive solution for signing and verifying software artifacts to ensure their integrity and authenticity. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.
+https://access.redhat.com/products/red-hat-trusted-artifact-signer/[Red Hat Trusted Artifact Signer^] is a comprehensive solution for signing and verifying software artifacts to ensure their integrity and authenticity. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.
 
 == Overview
 
@@ -102,10 +102,10 @@ tas_single_node_registry_username: "$REGISTRY_USERNAME"
 tas_single_node_registry_password: "$REGISTRY_PASSWORD"
 
 # Certificates <2>
-tas_ingress_certificate_root_ca_file: "/home/lab-user/root.pem" 
-tas_ingress_certificate_root_key_file: "/home/lab-user/privkey.pem" 
-tas_ingress_certificate_cert_file: "/home/lab-user/server.pem"
-tas_ingress_certificate_key_file: "/home/lab-user/privkey.pem"
+tas_ingress_certificate_root_ca_file: "/home/lab-user/rhtas-root.pem" 
+tas_ingress_certificate_root_key_file: "/home/lab-user/rhtas-privkey.pem" 
+tas_ingress_certificate_cert_file: "/home/lab-user/rhtas-server.pem"
+tas_ingress_certificate_key_file: "/home/lab-user/rhtas-privkey.pem"
 
 
 # OIDC Configuration # <3>
@@ -213,14 +213,14 @@ EOF
 
 You should have the following files in the `~/` directory (run `ls -l ~/` to confirm):
 
+* `rhtas_vars.yml` - The Ansible variables file to use with RHTAS configuration
 * `install_rhtas.yml` - The Ansible playbook to install RHTAS
 * `inventory` - The inventory file to use specifying which hosts to use
-* `privkey.pem` - The private key for the TLS certificates
-* `rhtas_vars.yml` - The Ansible variables file to use with RHTAS configuration
-* `root.pem` - The root TLS signed certificate
-* `server.pem` - The server certificate 
+* `rhtas-privkey.pem` - The private key for the TLS certificates for RHTAS
+* `rhtas-root.pem` - The root TLS signed certificate for RHTAS
+* `rhtas-server.pem` - The server certificate for RHTAS
 
-If you do not have these files, please go back and review the previous steps. If you do have the files, you can continue with the next step.
+There may be other files (e.g. the `rhtpa-` files used later for RHTPA), but these are the ones you should have. If you do not have these files, please go back and review the previous steps. If you do have the files, you can continue with the next step.
 
 . Run the following command to install RHTAS.
 +
@@ -357,7 +357,7 @@ Set the email address in an environment variable:
 +
 [source,bash,role="execute", subs="+attributes"]
 ----
-export EMAIL_ADDRESS="chris@redhat.com"
+export EMAIL_ADDRESS="{rhtas_user1_username}@redhat.com"
 ----
 +
 Now verify the image
@@ -381,7 +381,11 @@ The following checks were performed on each of these signatures:
 +
 Along with the JSON representation of the signature.
 
-. Now lets query the transparency log by using the Rekor command-line interface. Download the rekor-cli binary from the CLI server:
+==== Query the Transparency Log
+
+You can query the transparency log to prove authenticity, integrity, and accountability for software artifacts. This ensures that the artifact was built and signed by a trusted party and hasn't been tampered with. It also provides a record of the signing process for audit purposes, and helps determine whether malicious or unauthorized versions were introduced into the supply chain. We'll query it in a few different ways in the following steps.
+
+. To start, download the rekor-cli binary from the CLI server:
 +
 [source,bash,role="execute"]
 ----
@@ -414,6 +418,13 @@ This command returns the UUID of any log entries that match the email address (y
 rekor-cli get --uuid $UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
 ----
 You will get the same entry as before.
+
+[NOTE]
+====
+Rekor also includes a https://rekor-search.{base_hostname}[web search interface^] for searching through the log entries. Try it out by selecting "Email" attribute to search but and enter `{rhtas_user1_username}@redhat.com` into the email address field and press the `Search` button. You should see the a log entry for the container image you signed:
+
+image::rhtas-rekor-search.png[]
+====
 
 These methods (and others) can be used in CI pipelines to verify the authenticity of the artifacts during build, promotion, and deployment.
 

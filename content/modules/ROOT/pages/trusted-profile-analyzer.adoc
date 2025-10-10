@@ -1,138 +1,290 @@
-= Installing and Configuring Red Hat Trusted Profile Analyzer on RHEL
+= Installing and Configuring Red Hat Trusted Profile Analyzer (RHTPA) on RHEL
 
-Red Hat Trusted Profile Analyzer is a security analysis tool that helps organizations assess and validate the security posture of their systems and applications. This module will guide you through the installation and configuration process on Red Hat Enterprise Linux using Red Hat Ansible Automation Platform.
+https://access.redhat.com/products/red-hat-trusted-profile-analyzer[Red Hat Trusted Profile Analyzer^] is a proactive service that assists in risk management of Open Source Software (OSS) packages and dependencies. The Trusted Profile Analyzer service brings awareness to and remediation of OSS vulnerabilities discovered within the software supply chain.
 
 == Overview
 
-Red Hat Trusted Profile Analyzer provides:
-* Security posture assessment
-* Compliance validation against security standards
-* Vulnerability scanning and analysis
-* Policy enforcement and reporting
-* Integration with security frameworks
+RHTPA is Red Hat's downstream redistribution of the https://github.com/trustification/trustify[Trustify^] project.
 
-[#prerequisites]
-== Prerequisites
+It addresses some of the problems developers and platform engineers face when keeping software safe and organized, helping to:
 
-The workshop environment is pre-configured with Red Hat Enterprise Linux 10 and Red Hat Ansible Automation Platform. Before installing Red Hat Trusted Profile Analyzer, ensure your system meets the following requirements:
+* Deploy applications with fewer vulnerabilities
+* Meet compliance regulations for SBOM management and archiving
+* Know that trusted components are in use as early as possible
+* Reduce alert fatigue with fewer false positive by getting vendor vulnerability information from the actual vendor (VEX)
+* Analyze applications without downloading and installing
 
-. Red Hat Enterprise Linux 10 (pre-configured)
-. Red Hat Ansible Automation Platform (pre-configured)
-. Root or sudo access
-. Internet connectivity for package downloads
-. Minimum 8GB RAM
-. 50GB available disk space
-. Network access to target systems for analysis
+You can install RHTPA on Red Hat Enterprise Linux by using a Red Hat provided Ansible Playbook. This Ansible deployment of RHTPA allows you to specify your own PostgreSQL database, OpenID Connect (OIDC) provider, and a Simple Storage Service (S3) provider.
 
-. Verify your system meets the requirements:
+This exercise will guide you through the process of installing and configuring RHTPA on RHEL. The environment has pre-installed the following components to support the installation:
+
+* An OIDC provider, using the Red Hat Build of Keycloak.
+* A PostgreSQL database instance to store data related to SBOMs, vulnerabilities, and other data related to the security of your software supply chain.
+
+The following steps will take you through the installation and configuration of RHTPA on RHEL. Not all configuration possibilities are covered in this module, but you can find more information in the https://console.redhat.com/ansible/automation-hub/repo/published/redhat/trusted_profile_analyzer/docs/[RHTPA Ansible collection documentation^].
+
+== Install Trusted Profile Analyzer
+
+=== Setup Environment Variables
+
+. Copy and paste (you can click the small icon to the right of the command to copy, and then kbd:[CTRL-V] or kbd:[CMD-V] on MacOS to paste) into the terminal and press kbd:[ENTER] to run the command and assign the necessary environment variables:
++
+[source,bash,role="execute", subs="+attributes"]
+----
+export GUID={guid}
+export BASE_HOSTNAME={base_hostname}
+export KEYCLOAK_REALM=chicken # yes, it really is chicken 🐔
+export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
+export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
+export OIDC_CLIENT_SECRET=5460cc91-4e20-4edd-881c-b15b169f8a79
+----
++
+These environment variables define the various endpoints and configuration for RHTPA, and are read from the CLI commands you'll run later in the module.
+
+. Next, run these two commands, replacing the username and password or service account token with your own (don't just copy-paste, you'll need to replace the placeholders with your own values):
 +
 [source,bash]
 ----
-cat /etc/redhat-release
-free -h
-df -h /
+export REGISTRY_USERNAME='<your username>'
+export REGISTRY_PASSWORD='<your password or service account token>'
 ----
 
-[#installation]
-== Installation
-
-Red Hat Trusted Profile Analyzer can be installed using Red Hat Ansible Automation Platform with the supported Ansible Collections.
-
-. Verify Ansible Automation Platform is available:
+. To verify that your credentials are correct, attempt to login to the registry using `podman login`:
 +
-[source,bash]
+[source,bash, role="execute"]
 ----
-ansible --version
-ansible-galaxy collection list | grep trusted
+podman login registry.redhat.io -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"
 ----
-
-. Create an Ansible playbook for Red Hat Trusted Profile Analyzer installation:
 +
-[source,bash]
+You should see `Login Succeeded!` indicating that you are logged in. If you get an error, confirm that your credentials are correct and that you have the correct permissions to access the registry.
+
+=== Create Ansible Variables
+
+. Create the Ansible variables file which will be used by the playbook when installing RHTPA.
++
+[source,bash, role="execute", subs="+attributes"]
 ----
-cat > install-trusted-profile-analyzer.yml << 'EOF'
+cat << EOF > ~/rhtpa_vars.yml
+
+# Core Configurations
+rhel: true
+
+# Image Configurations
+tpa_single_node_trustification_image: registry.redhat.io/rhtpa/rhtpa-trustification-service-rhel9:2.1.0
+tpa_single_node_registry_username: "$REGISTRY_USERNAME"
+tpa_single_node_registry_password: "$REGISTRY_PASSWORD"
+
+# PostgreSQL # <1>
+tpa_single_node_pg_host: utility
+tpa_single_node_pg_port: 5532
+tpa_single_node_pg_db: rhtpa
+tpa_single_node_pg_admin: postgres
+tpa_single_node_pg_admin_passwd: rhtpaAdmin1234
+tpa_single_node_pg_user: rhtpa
+tpa_single_node_pg_user_passwd: rhtpa1234
+tpa_single_node_pg_ssl_mode: prefer
+
+# OIDC # <2>
+tpa_single_node_oidc_issuer_url: "$OIDC_ISSUER_URL"
+tpa_single_node_oidc_frontend_id: frontend
+tpa_single_node_oidc_client_id: cli
+tpa_single_node_oidc_client_secret: "$OIDC_CLIENT_SECRET"
+
+# Podman Configurations # <3>
+tpa_single_node_podman_network: rhtpa
+
+# Host Level Configurations # <4>
+tpa_single_node_kube_manifest_dir: /etc/rhtpa/manifests
+tpa_single_node_system_packages:
+  - podman
+  - postgresql
+
+# Certificates # <5>
+tpa_single_node_tls_trust_anchor_cert: /home/lab-user/rhtpa-root.pem
+tpa_single_node_tls_server_cert: /home/lab-user/rhtpa-server.pem
+tpa_single_node_tls_server_key: /home/lab-user/rhtpa-privkey.pem
+EOF
+----
+<1> The PostgreSQL database instance to store data related to SBOMs, vulnerabilities, and other data related to the security of your software supply chain. It has been pre-installed and configured for you on the `utility` node.
+<2> This uses the pre-installed Keycloak instance as the OpenID Connect provider.
+<3> The name of the network to use for the Podman containers. It is created automatically by the playbook.
+<4> The directory to store the Kubernetes manifests for the Podman containers.
+<5> The system packages to install on the node.
+
+=== Create Ansible Playbook
+
+. Create the Ansible playbook which is the main entry point for installation.
++
+[source,bash, role="execute"]
+----
+cat << EOF > ~/install_rhtpa.yml
 ---
-- name: Install Red Hat Trusted Profile Analyzer
-  hosts: localhost
-  become: yes
+- name: Install RHTPA
+  hosts: rhtpa
+  become: true
   tasks:
-    - name: Enable required repositories
-      command: subscription-manager repos --enable=rhel-10-for-x86_64-appstream-rpms
-      
-    - name: Install Red Hat Trusted Profile Analyzer packages
-      dnf:
-        name: redhat-trusted-profile-analyzer
-        state: present
-        
-    - name: Verify installation
-      command: rpm -qa | grep trusted-profile-analyzer
-      register: installed_packages
-      
-    - name: Display installed packages
-      debug:
-        var: installed_packages.stdout_lines
+    - name: Set fact to bind to all interfaces
+      ansible.builtin.set_fact:
+        tpa_single_node_rhel_host: "0.0.0.0"
+    - name: Create Required Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "/root/.config/containers"
+        - "{{ tpa_single_node_kube_manifest_dir }}"
+        - "{{ tpa_single_node_kube_manifest_dir }}/Secrets"
+    - name: Create Policy File
+      ansible.builtin.copy:
+        dest: /root/.config/containers/policy.json
+        content: |
+          {
+            "default": [
+              {
+                "type": "insecureAcceptAnything"
+              }
+            ],
+            "transports": {
+              "docker": {
+                "registry.redhat.io/rhtpa-trustification-service-rhel9": [
+                  {
+                    "type": "insecureAcceptAnything"
+                  }
+                ]
+              }
+            }
+          }
+        mode: '0644'
+
+    - name: Call trusted_profile_analyzer role (OS Task)
+      ansible.builtin.include_role:
+        name: redhat.trusted_profile_analyzer.tpa_single_node
+        tasks_from: os.yml
+
+    - name: Check if RHTPA network exists
+      ansible.builtin.command:
+        cmd: "podman network inspect {{ tpa_single_node_podman_network }}"
+      register: network_inspect_result
+      failed_when: false
+      changed_when: false
+
+    - name: Create RHTPA network (without DNS Support)
+      ansible.builtin.command:
+        cmd: "podman network create --disable-dns {{ tpa_single_node_podman_network }}"
+      when: network_inspect_result.rc != 0
+      changed_when: true
+
+    - name: Call trusted_profile_analyzer role (Podman Task)
+      ansible.builtin.include_role:
+        name: redhat.trusted_profile_analyzer.tpa_single_node
+        tasks_from: podman.yml
+    - name: Call trusted_profile_analyzer role
+      ansible.builtin.include_role:
+        name: redhat.trusted_profile_analyzer.tpa_single_node
+        tasks_from: infra/main.yml
 EOF
 ----
 
-. Execute the Ansible playbook:
+=== Create Inventory File
+
+. If you did not do so already in the TAS section, create the inventory file which defines the hostnames of the managed nodes. We'll use the `rhtpa` hostname for this exercise (`rhtas` is used for the earlier exercise).
 +
-[source,bash]
+[source,bash, role="execute"]
 ----
-ansible-playbook install-trusted-profile-analyzer.yml
-----
+cat << EOF > ~/inventory 
+[rhtas]
+rhtas
 
-[#configuration]
-== Configuration
+[rhtpa]
+rhtpa
 
-After installation, configure Red Hat Trusted Profile Analyzer using Ansible Automation Platform.
-
-. Create a configuration playbook:
-+
-[source,bash]
-----
-cat > configure-trusted-profile-analyzer.yml << 'EOF'
----
-- name: Configure Red Hat Trusted Profile Analyzer
-  hosts: localhost
-  become: yes
-  tasks:
-    - name: Initialize configuration
-      command: trusted-profile-analyzer init
-      
-    - name: Configure analysis policies
-      command: trusted-profile-analyzer policy --create-default
-      
-    - name: Enable and start service
-      systemd:
-        name: trusted-profile-analyzer
-        enabled: yes
-        state: started
-        
-    - name: Verify service status
-      command: systemctl status trusted-profile-analyzer
-      register: service_status
-      
-    - name: Display service status
-      debug:
-        var: service_status.stdout_lines
+[all:vars]
+ansible_user=lab-user
 EOF
 ----
 
-. Execute the configuration playbook:
+=== Run Playbook to install RHTPA
+
+You should have the following files in the `~/` directory (run `ls -l ~/` to confirm):
+
+* `rhtpa_vars.yml` - The Ansible variables file to use with RHTPA configuration
+* `install_rhtpa.yml` - The Ansible playbook to install RHTPA
+* `inventory` - The inventory file to use specifying which hosts to use
+* `rhtpa-privkey.pem` - The private key for the TLS certificates for RHTPA
+* `rhtpa-root.pem` - The root TLS signed certificate for RHTPA
+* `rhtpa-server.pem` - The server certificate for RHTPA
+
+There may be other files (e.g. the `rhtas-` files used earlier for RHTAS), but these are the ones you should have. If you do not have these files, please go back and review the previous steps. If you do have the files, you can continue with the next step.
+
+. Run the following command to install RHTPA.
 +
-[source,bash]
+[source,bash, role="execute"]
 ----
-ansible-playbook configure-trusted-profile-analyzer.yml
+cd ~ && \
+ansible-navigator \# <1>
+  -m stdout \# <2>
+  --eei=localhost/ansible_ee \# <3>
+  --pp=missing \# <4>
+  run install_rhtpa.yml \# <5>
+  -e @rhtpa_vars.yml \# <6>
+  --pae=false \# <7>
+  -i inventory# <8>
 ----
+<1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do).
+<2> Displays the output of the playbook in the terminal.
+<3> The specific execution environment in which the playbook runs and contains the required Ansible Collections for the products.
+<4> Only pull the execution environment if not already present locally (which it is))
+<5> The playbook to run.
+<6> The variables file to use.
+<7> Don't create playbook artifacts (like JSON log files)
+<8> The inventory file to use
++
+The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:
+
+[source,console]
+----
+PLAY RECAP ******************************************************************************************
+rhtpa                      : ok=50   changed=14   unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+----
++
+If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the `/home/lab-user` directory correctly and appear correct.
+
+To see the running services on the `rhtpa` node, run the following command:
++
+[source,bash,role="execute"]
+----
+ssh rhtpa sudo "podman pod ps --filter status=running"
+----
+
+You should see:
++
+[source,console]
+----
+POD ID        NAME          STATUS      CREATED         INFRA ID      # OF CONTAINERS
+cd332a1c99d0  importer-pod  Running     22 minutes ago  30bf07ad7cf5  2
+de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2
+----
+
+The `importer-pod` is the pod for the importer service, exposing REST APIs to support operations for ingesting and retrieving supply-chain data. The `server-pod` exposes the main API for the RHTPA service, supporting the web interface and API for evaluating the risk profile of your software supply chain.
+
+You can also retrieve logs of the services (e.g. the server service) by running the following command:
++
+[source,bash,role="execute"]
+----
+ssh rhtpa "sudo podman pod logs -f server-pod"
+----
+
+Press kbd:[CTRL-C] (or kbd:[CMD-C] on MacOS) to exit the log output. This can be useful for debugging issues with the RHTPA installation.
+
+== Verify Trusted Profile Analyzer installation
+
+TBD
 
 == Next Steps
 
 With Red Hat Trusted Profile Analyzer installed and configured, you can now:
-* Perform security posture assessments
-* Validate compliance against security standards
-* Generate security reports
-* Integrate with your security monitoring systems
-* Configure automated analysis workflows
 
-For more advanced configuration options, refer to the official Red Hat Trusted Profile Analyzer documentation.
+* Ingest software supply chain data
+* Evaluate the risk profile of your software supply chain
 
+For more advanced configuration options and day-2 operation capabilities on RHEL, refer to the https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer[official Red Hat Trusted Profile Analyzer documentation^].
