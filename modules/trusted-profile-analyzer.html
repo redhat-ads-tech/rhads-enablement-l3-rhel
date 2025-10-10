@@ -723,25 +723,22 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 </div>
 </li>
 <li>
-<p>Click on the <em>Vulnerabilities</em> tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).</p>
+<p>Click on the name of the SBOM. Click on the <em>Vulnerabilities</em> tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).</p>
 <div class="imageblock">
 <div class="content">
 <img src="_images/rhtpa-vulnerabilities.png" alt="rhtpa vulnerabilities">
 </div>
 </div>
-<div class="paragraph">
-<p>You can also search for vulnerabilities, sboms, or any other object by using the search bar at the top of the page.</p>
-</div>
 </li>
 <li>
-<p>Try typing in <code>httpd</code> to see the various packages, sboms, and any vulnerabilities that may exist.</p>
+<p>You can also search for vulnerabilities, sboms, or any other object by using the search feature. Click on <em>Search</em> at the left, and try typing in <code>httpd</code> to see the various packages, sboms, and any vulnerabilities that may exist:</p>
 <div class="imageblock">
 <div class="content">
 <img src="_images/rhtpa-search.png" alt="rhtpa search">
 </div>
 </div>
 <div class="paragraph">
-<p>By populating RHTPA with your own SBOMs as part of your CI pipelines, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the <em>Importers</em> tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you&#8217;ll see more interesting results:</p>
+<p>By populating RHTPA with your own SBOMs as part of your CI pipelines <em>for each and every build</em>, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the <em>Importers</em> tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you&#8217;ll see more interesting results:</p>
 </div>
 <div class="imageblock">
 <div class="content">
