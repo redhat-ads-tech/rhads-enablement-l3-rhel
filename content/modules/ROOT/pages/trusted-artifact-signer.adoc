@@ -246,29 +246,29 @@ ansible-navigator \# <1>
 <7> The inventory file to use
 +
 The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:
-
++
 [source,console]
 ----
-PLAY RECAP *********************************************************************************
-rhtas                      : ok=262  changed=114  unreachable=0    failed=0    skipped=233  rescued=0    ignored=0   
+PLAY RECAP **************************
+rhtas : ok=262  changed=114  unreachable=0    failed=0  ...
 ----
 +
 If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the `/home/lab-user` directory correctly and appear correct.
 
-To see the running services on the `rhtas` node, run the following command:
+. To see the running services on the `rhtas` node, run the following command:
 +
 [source,bash,role="execute"]
 ----
 ssh rhtas sudo "podman pod ps --filter status=running"
 ----
-
++
 This will run the `podman pod ps` command on the `rhtas` node. You should see a number of pods for each of the services that were installed for RHTAS, including `rekor`, `rekor-search`, `fulcio`, `tuf`, `tlog`, `cli-server`, `trillian`, and `nginx`. To see the log files for the `rekor` service, run the following command:
 +
 [source,bash,role="execute"]
 ----
 ssh rhtas "sudo podman pod logs -f rekor-server-pod"
 ----
-
++
 Press kbd:[CTRL-C] (or kbd:[CMD-C] on MacOS) to exit the log output. This can be useful for debugging issues with the RHTAS installation.
 
 == Verify Trusted Artifact Signer installation

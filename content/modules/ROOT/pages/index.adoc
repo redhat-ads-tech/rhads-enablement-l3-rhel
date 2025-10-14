@@ -82,8 +82,8 @@ If you do not have registry credentials, please visit the https://access.redhat.
 
 == Lab Environment
 
-The terminal window to your right is *already* logged into the lab environment as the `lab-user` user via `ssh`. 
-You will use this terminal window to complete most steps of this workshop.
+Both terminal windows to your right are *already* logged into the lab environment as the `lab-user` user via `ssh`. 
+You will use these terminal windows to complete most steps of this workshop. Both are identical, but keep in mind that environment variables defined in one terminal will not be available in the other unless you explicitly set them in the other terminal.
 
 Each module is self-contained and can be completed independently, allowing you to focus on the solutions most relevant to your needs.
 
