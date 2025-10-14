@@ -607,6 +607,150 @@ ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h --certificate-identit
 Here you can see a number of _violations_ in the output indicating our dummy data failed the policy checks.
 ====
 
+
+== Extra Credit: Updating Certificate Expiration Date
+
+The Update Framework (TUF) is used by RHTAS as a framework for securing software update systems. TUF refers to the RHTAS services as trusted root targets. There are four trusted targets, one for each RHTAS service: Fulcio, Certificate Transparency (CT) log, Rekor, and Timestamp Authority (TSA). Client software, such as cosign, use the RHTAS trust root targets to sign and verify artifact signatures.
+
+By default, the expiration date of all metadata files for these services is 52 weeks from the time you deploy the RHTAS service. Red Hat recommends choosing shorter expiration periods, and rotating your public keys and certificates often. Doing these maintenance tasks regularly can help prevent attacks on your code base.
+
+To update the expiration date of the trusted root targets, you can use the `tuftool` binary. You will download a snapshot of the current trusted root targets, update the expiration dates in place, and then re-run the Ansible playbook to update the TUF repository.
+
+Follow these steps to update the expiration dates of the trusted root targets (a typical day-2 administrative task that must be performed regularly, before expiration):
+
+. First, check out what the current expiration date is for TUF roots (TUF's root key expiration date is defined in the root metadata file accessible from the TUF server, and versioned, and since there's only 1 version so far, the name would be `1.root.json`):
++
+[source,bash,role="execute"]
+----
+curl -s  https://tuf.$BASE_HOSTNAME/1.root.json | jq '.signed.expires'
+----
++
+The date returned should be 1 year from the current date.
+
+. Download the `tuftool` binary from the CLI server:
++
+[source,bash,role="execute"]
+----
+curl -L $CLI_SERVER_URL/clients/linux/tuftool-amd64.gz | gunzip > tuftool-amd64
+sudo chmod +x tuftool-amd64 && sudo mv tuftool-amd64 /usr/local/bin/tuftool
+----
++
+. Configure your shell environment for using `tuftool`:
++
+[source,bash,role="execute"]
+----
+export WORK="${HOME}/trustroot-example"
+export ROOT="${WORK}/root/root.json"
+export KEYDIR="${WORK}/keys"
+export INPUT="${WORK}/input"
+export TUF_REPO="${WORK}/tuf-repo"
+export REMOTE_KEYS_VOLUME=$(ssh lab-user@rhtas -t "sudo podman volume mount tuf-signing-keys" | tr -d '[:space:]')
+export REMOTE_TUF_VOLUME=$(ssh lab-user@rhtas -t "sudo podman volume mount tuf-repository" | tr -d '[:space:]')
+export TIMESTAMP_EXPIRATION="in 1 day"
+export SNAPSHOT_EXPIRATION="in 1 day"
+export TARGETS_EXPIRATION="in 26 weeks"
+export ROOT_EXPIRATION="in 26 weeks"
+----
+
+. Create temporary directories to hold the `tuftool` input and output, and download them using `rsync`:
++
+[source,bash,role="execute"]
+----
+mkdir mkdir -p "${WORK}/root/" "${KEYDIR}" "${INPUT}" "${TUF_REPO}"
+rsync -r --rsync-path="sudo rsync" lab-user@rhtas:"${REMOTE_KEYS_VOLUME}/" "${KEYDIR}"
+rsync -r --rsync-path="sudo rsync" lab-user@rhtas:"${REMOTE_TUF_VOLUME}/" "${TUF_REPO}"
+cp "${TUF_REPO}/root.json" "${ROOT}"
+ls ${KEYDIR} ${TUF_REPO}
+----
+This will download the metadata files (prefixed with `1`).
+
+. Update the expiration dates in place:
++
+The Timestamp and Snapshot metadata should normally have a short expiration (1 day), whereas the Root and Targets metadata should expire less often (1 year). A good rule of thumb is the more often the metadata changes, the sooner it should expire. See the https://theupdateframework.io/docs/faq/[TUF documentation^] for more guidance. Run this command to update the expiration dates:
++
+[source,bash,role="execute"]
+----
+tuftool update \
+  --root "${ROOT}" \
+  --key "${KEYDIR}/timestamp.pem" \
+  --key "${KEYDIR}/snapshot.pem" \
+  --key "${KEYDIR}/targets.pem" \
+  --timestamp-expires "${TIMESTAMP_EXPIRATION}" \
+  --snapshot-expires "${SNAPSHOT_EXPIRATION}" \
+  --targets-expires "${TARGETS_EXPIRATION}" \
+  --outdir "${TUF_REPO}" \
+  --metadata-url "file://${TUF_REPO}"
+ls ${KEYDIR} ${TUF_REPO}
+----
++
+You will see new metadata files (prefixed with `2`) with the updated expiration dates.
+
+. Update the root expiration date:
++
+Typically you would only update the root expiration date if it is about to expire. Let's update ours just for fun. Run this command to update the root expiration date (and sign it and copy it to the proper location):
++
+[source,bash,role="execute"]
+----
+tuftool root expire "${ROOT}" "${ROOT_EXPIRATION}"
+tuftool root bump-version "${ROOT}"
+tuftool root sign "${ROOT}" -k "${KEYDIR}/root.pem"
+export NEW_ROOT_VERSION=$(cat "${ROOT}" | jq -r ".signed.version")
+cp "${ROOT}" "${TUF_REPO}/root.json"
+cp "${ROOT}" "${TUF_REPO}/${NEW_ROOT_VERSION}.root.json"
+ls ${KEYDIR} ${TUF_REPO}
+----
+
+. Create an archive of the metadata files
++
+To upload, you need to create an archive of the metadata files. Run this to create the archive and create a new ansible variables file to reference it:
++
+[source,bash,role="execute"]
+----
+tar -C "${WORK}" -czvf ~/repository.tar.gz tuf-repo
+cat <<EOF > ~/rhtas_trust_root_update.yml
+tas_single_node_trust_root:
+  full_archive: "{{ lookup('file', 'repository.tar.gz') | b64encode }}"
+EOF
+
+----
++
+With the archive created, you can re-invoke the Ansible playbook with the reference to the new archive.
+
+. Run the playbook again and pass the archive as the trust root:
++
+[source,bash,role="execute"]
+----
+cd ~ && \
+ansible-navigator \
+  -m stdout \
+  --eei=localhost/ansible_ee \
+  --pp=missing \
+  run install_rhtas.yml \
+  --pae=false \
+  -i inventory \
+  -e @rhtas_trust_root_update.yml
+----
++
+Wait for the playbook to finish (it will take a few minutes, and you may notice lines related to the usage of the supplied archive).
+
+. Verify the new expiration dates
++
+Once the server comes back up, re-run the command to check the expiration dates:
++
+[source,bash,role="execute"]
+----
+echo "Root Version 1:"
+curl -s  https://tuf.$BASE_HOSTNAME/1.root.json | jq '.signed.expires'
+echo "Root Version 2:"
+curl -s  https://tuf.$BASE_HOSTNAME/2.root.json | jq '.signed.expires'
+echo "Timestamp:"
+curl -s  https://tuf.$BASE_HOSTNAME/timestamp.json | jq '.signed.expires'
+----
++
+The version 1 root should have the same expiration date (1 year from now), but the version 2 root should have the new expiration date (26 weeks from now). The Timestamp metadata should have the new expiration date (1 day from now).
+
+You can repeat this process to avoid expiration of the TUF services. You are also encouraged to rotate the keys and certificates for the TUF services regularly to maintain a secure coding environment for developers and prevent mix-and-match attacks on a code base. More information can be found in the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer[RHTAS documentation^].
+
 == Next Steps
 
 With Red Hat Trusted Artifact Signer installed and configured, you can now:
