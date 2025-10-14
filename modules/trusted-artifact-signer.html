@@ -494,29 +494,22 @@ ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
 <td>The inventory file to use
 <div class="paragraph">
 <p>The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">PLAY RECAP **************************
+rhtas : ok=262  changed=114  unreachable=0    failed=0  ...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct.</p>
 </div></td>
 </tr>
 </table>
 </div>
 </li>
-</ol>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">PLAY RECAP *********************************************************************************
-rhtas                      : ok=262  changed=114  unreachable=0    failed=0    skipped=233  rescued=0    ignored=0</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>+
-If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct.</p>
-</div>
-<div class="paragraph">
+<li>
 <p>To see the running services on the <code>rhtas</code> node, run the following command:</p>
-</div>
-<div class="paragraph">
-<p>+</p>
-</div>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas sudo "podman pod ps --filter status=running"</code></pre>
@@ -525,9 +518,6 @@ If you see any errors, scroll up and check for errors in the output. Confirm the
 <div class="paragraph">
 <p>This will run the <code>podman pod ps</code> command on the <code>rhtas</code> node. You should see a number of pods for each of the services that were installed for RHTAS, including <code>rekor</code>, <code>rekor-search</code>, <code>fulcio</code>, <code>tuf</code>, <code>tlog</code>, <code>cli-server</code>, <code>trillian</code>, and <code>nginx</code>. To see the log files for the <code>rekor</code> service, run the following command:</p>
 </div>
-<div class="paragraph">
-<p>+</p>
-</div>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas "sudo podman pod logs -f rekor-server-pod"</code></pre>
@@ -535,6 +525,9 @@ If you see any errors, scroll up and check for errors in the output. Confirm the
 </div>
 <div class="paragraph">
 <p>Press <kbd>CTRL-C</kbd> (or <kbd>CMD-C</kbd> on MacOS) to exit the log output. This can be useful for debugging issues with the RHTAS installation.</p>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
