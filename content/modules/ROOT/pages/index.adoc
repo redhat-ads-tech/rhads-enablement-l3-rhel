@@ -63,7 +63,7 @@ To check out the Keycloak configuration, navigate to the https://rhbk.{base_host
 
 Keycloak has been pre-configured with the `trusted-artifact-signer` realm (used for TAS) and `chicken` realm (used for TPA). By clicking on _Manage Realms_ you can switch between the two realms, and click on _Users_  to view the predefined users in each realm (these realms, clients, and users will be used in the exercises). Feel free to explore the other sections of the Keycloak admin console, but try not to change anything until after you have completed the exercises!
 
-::image::keycloak-admin-console.png[]
+image::keycloak-admin-console.png[]
 
 == Prerequisites
 

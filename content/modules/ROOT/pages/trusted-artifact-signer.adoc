@@ -30,12 +30,12 @@ The RHTAS Ansible collection deploys the following RHTAS components onto the `rh
 * The Update Framework (TUF) server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
 * An https://www.nginx.com/[NGINX^] front end places an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establishing secure communications to the following hosts:
 +
-** `https://cli-server.{base_hostname}`
-** `https://fulcio.{base_hostname}`
-** `https://rekor.{base_hostname}`
-** `https://rekor-search.{base_hostname}`
-** `https://tsa.{base_hostname}`
-** `https://tuf.{base_hostname}`
+** `https://cli-server-{base_hostname}`
+** `https://fulcio-{base_hostname}`
+** `https://rekor-{base_hostname}`
+** `https://rekor-search-{base_hostname}`
+** `https://tsa-{base_hostname}`
+** `https://tuf-{base_hostname}`
 
 Each RHTAS release is associated with and installs specific versions of the above components. For more detail on these dependencies, visit the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer/1.2/html/release_notes/appendix_a_red_hat_trusted_artifact_signer_release_notes[Red Hat Trusted Artifact Signer Release Notes^].
 
@@ -52,11 +52,11 @@ The following steps will take you through the installation and configuration of 
 export GUID={guid}
 export BASE_HOSTNAME={base_hostname}
 export KEYCLOAK_REALM=trusted-artifact-signer
-export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
-export TUF_URL=https://tuf.$BASE_HOSTNAME
+export KEYCLOAK_URL=https://rhbk-${BASE_HOSTNAME}
+export TUF_URL=https://tuf-${BASE_HOSTNAME}
 export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
-export COSIGN_FULCIO_URL=https://fulcio.$BASE_HOSTNAME
-export COSIGN_REKOR_URL=https://rekor.$BASE_HOSTNAME
+export COSIGN_FULCIO_URL=https://fulcio-${BASE_HOSTNAME}
+export COSIGN_REKOR_URL=https://rekor-${BASE_HOSTNAME}
 export COSIGN_MIRROR=$TUF_URL
 export COSIGN_ROOT=$TUF_URL/root.json
 export COSIGN_OIDC_CLIENT_ID=$KEYCLOAK_REALM
@@ -67,7 +67,7 @@ export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
 export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
 export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
 export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
-export CLI_SERVER_URL=https://cli-server.$BASE_HOSTNAME
+export CLI_SERVER_URL=https://cli-server-${BASE_HOSTNAME}
 ----
 +
 These environment variables define the various endpoints and configuration for the RHTAS service, and are read from the CLI commands you'll run later in the module.
@@ -289,7 +289,7 @@ sudo chmod +x cosign && sudo mv cosign /usr/local/bin/cosign
 +
 [NOTE]
 ====
-The CLI server also has a https://cli-server.{base_hostname}[web interface^] for downloading binaries for all of the tools used with RHTAS for various platforms. In this exercise we are using `curl` to download the binaries, but you can also use the web interface to download the binaries to your local workstation.
+The CLI server also has a https://cli-server-{base_hostname}[web interface^] for downloading binaries for all of the tools used with RHTAS for various platforms. In this exercise we are using `curl` to download the binaries, but you can also use the web interface to download the binaries to your local workstation.
 ====
 
 . Initialize cosign:
@@ -423,7 +423,7 @@ You will get the same entry as before.
 
 [NOTE]
 ====
-Rekor also includes a https://rekor-search.{base_hostname}[web search interface^] for searching through the log entries. Try it out by selecting "Email" attribute to search but and enter `{rhtas_user1_username}@redhat.com` into the email address field and press the `Search` button. You should see the a log entry for the container image you signed:
+Rekor also includes a https://rekor-search-{base_hostname}[web search interface^] for searching through the log entries. Try it out by selecting "Email" attribute to search but and enter `{rhtas_user1_username}@redhat.com` into the email address field and press the `Search` button. You should see the a log entry for the container image you signed:
 
 image::rhtas-rekor-search.png[]
 ====
