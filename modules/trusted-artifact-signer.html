@@ -174,22 +174,22 @@
 <div class="ulist">
 <ul>
 <li>
-<p><code><a href="https://cli-server.{base_hostname}" class="bare">https://cli-server.{base_hostname}</a></code></p>
+<p><code><a href="https://cli-server-{base_hostname}" class="bare">https://cli-server-{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://fulcio.{base_hostname}" class="bare">https://fulcio.{base_hostname}</a></code></p>
+<p><code><a href="https://fulcio-{base_hostname}" class="bare">https://fulcio-{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://rekor.{base_hostname}" class="bare">https://rekor.{base_hostname}</a></code></p>
+<p><code><a href="https://rekor-{base_hostname}" class="bare">https://rekor-{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://rekor-search.{base_hostname}" class="bare">https://rekor-search.{base_hostname}</a></code></p>
+<p><code><a href="https://rekor-search-{base_hostname}" class="bare">https://rekor-search-{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://tsa.{base_hostname}" class="bare">https://tsa.{base_hostname}</a></code></p>
+<p><code><a href="https://tsa-{base_hostname}" class="bare">https://tsa-{base_hostname}</a></code></p>
 </li>
 <li>
-<p><code><a href="https://tuf.{base_hostname}" class="bare">https://tuf.{base_hostname}</a></code></p>
+<p><code><a href="https://tuf-{base_hostname}" class="bare">https://tuf-{base_hostname}</a></code></p>
 </li>
 </ul>
 </div>
@@ -219,11 +219,11 @@
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export GUID=my-guid
 export BASE_HOSTNAME={base_hostname}
 export KEYCLOAK_REALM=trusted-artifact-signer
-export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
-export TUF_URL=https://tuf.$BASE_HOSTNAME
+export KEYCLOAK_URL=https://rhbk-${BASE_HOSTNAME}
+export TUF_URL=https://tuf-${BASE_HOSTNAME}
 export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
-export COSIGN_FULCIO_URL=https://fulcio.$BASE_HOSTNAME
-export COSIGN_REKOR_URL=https://rekor.$BASE_HOSTNAME
+export COSIGN_FULCIO_URL=https://fulcio-${BASE_HOSTNAME}
+export COSIGN_REKOR_URL=https://rekor-${BASE_HOSTNAME}
 export COSIGN_MIRROR=$TUF_URL
 export COSIGN_ROOT=$TUF_URL/root.json
 export COSIGN_OIDC_CLIENT_ID=$KEYCLOAK_REALM
@@ -234,7 +234,7 @@ export SIGSTORE_FULCIO_URL=$COSIGN_FULCIO_URL
 export SIGSTORE_OIDC_ISSUER=$COSIGN_OIDC_ISSUER
 export SIGSTORE_REKOR_URL=$COSIGN_REKOR_URL
 export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
-export CLI_SERVER_URL=https://cli-server.$BASE_HOSTNAME</code></pre>
+export CLI_SERVER_URL=https://cli-server-${BASE_HOSTNAME}</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -568,7 +568,7 @@ sudo chmod +x cosign &amp;&amp; sudo mv cosign /usr/local/bin/cosign</code></pre
 </td>
 <td class="content">
 <div class="paragraph">
-<p>The CLI server also has a <a href="https://cli-server.{base_hostname}" target="_blank" rel="noopener">web interface</a> for downloading binaries for all of the tools used with RHTAS for various platforms. In this exercise we are using <code>curl</code> to download the binaries, but you can also use the web interface to download the binaries to your local workstation.</p>
+<p>The CLI server also has a <a href="https://cli-server-{base_hostname}" target="_blank" rel="noopener">web interface</a> for downloading binaries for all of the tools used with RHTAS for various platforms. In this exercise we are using <code>curl</code> to download the binaries, but you can also use the web interface to download the binaries to your local workstation.</p>
 </div>
 </td>
 </tr>
@@ -781,7 +781,7 @@ sudo chmod +x rekor-cli &amp;&amp; sudo mv rekor-cli /usr/local/bin/rekor-cli</c
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Rekor also includes a <a href="https://rekor-search.{base_hostname}" target="_blank" rel="noopener">web search interface</a> for searching through the log entries. Try it out by selecting "Email" attribute to search but and enter <code>{rhtas_user1_username}@redhat.com</code> into the email address field and press the <code>Search</code> button. You should see the a log entry for the container image you signed:</p>
+<p>Rekor also includes a <a href="https://rekor-search-{base_hostname}" target="_blank" rel="noopener">web search interface</a> for searching through the log entries. Try it out by selecting "Email" attribute to search but and enter <code>{rhtas_user1_username}@redhat.com</code> into the email address field and press the <code>Search</code> button. You should see the a log entry for the container image you signed:</p>
 </div>
 <div class="imageblock">
 <div class="content">
