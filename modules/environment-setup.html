@@ -115,16 +115,16 @@
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Open the terminal and copy and paste the following and press <kbd>Enter</kbd> to run the command:</p>
+<p>Open the terminal and copy and paste (you can click the small icon to the right of the command to copy, and then <kbd>CTRL-V</kbd> or <kbd>CMD-V</kbd> on MacOS to paste) the following and press <kbd>Enter</kbd> to run the command:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">for prod in rhtas rhtpa; do
     TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" &amp;&amp; \
     cd $TMPDIR &amp;&amp; \
-    sudo csplit -z -f cert- -b ${prod}-%02d.pem /etc/letsencrypt/live/${prod}-{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' &amp;&amp; \
+    sudo csplit -z -f cert- -b ${prod}-%02d.pem /etc/letsencrypt/live/${prod}.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' &amp;&amp; \
     sudo cat cert-${prod}-00.pem cert-${prod}-01.pem &gt; /home/lab-user/${prod}-server.pem &amp;&amp; \
     sudo cat cert-${prod}-02.pem &gt; /home/lab-user/${prod}-root.pem &amp;&amp; \
-    sudo cp /etc/letsencrypt/live/${prod}-{base_hostname}/privkey.pem /home/lab-user/${prod}-privkey.pem &amp;&amp; \
+    sudo cp /etc/letsencrypt/live/${prod}.{base_hostname}/privkey.pem /home/lab-user/${prod}-privkey.pem &amp;&amp; \
     sudo chown lab-user /home/lab-user/${prod}*.pem &amp;&amp; \
     sudo chmod 660 /home/lab-user/${prod}*.pem &amp;&amp; \
     cd /home/lab-user &amp;&amp; \
