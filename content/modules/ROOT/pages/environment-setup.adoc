@@ -6,17 +6,17 @@ Prior to starting the labs, there are a few steps that need to be completed firs
 
 Your lab environment has been provisioned with a LetsEncrypt certificate to allow for trusted communication to be established between the various components. Different certificate requirements are needed when working with TAS and TPA and as a result, additional steps are needed to modify the provided certificate into formats that they require.
 
-. Open the terminal and copy and paste the following and press kbd:[Enter] to run the command:
+. Open the terminal and copy and paste (you can click the small icon to the right of the command to copy, and then kbd:[CTRL-V] or kbd:[CMD-V] on MacOS to paste) the following and press kbd:[Enter] to run the command:
 +
 [source,bash, role="execute", subs="+attributes"]
 ----
 for prod in rhtas rhtpa; do
     TMPDIR="$(mktemp -d -t certsplit.XXXXXX)" && \
     cd $TMPDIR && \
-    sudo csplit -z -f cert- -b $\{prod}-%02d.pem /etc/letsencrypt/live/$\{prod}-{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
+    sudo csplit -z -f cert- -b $\{prod}-%02d.pem /etc/letsencrypt/live/$\{prod}.{base_hostname}/fullchain.pem '/.*BEGIN CERTIFICATE.*/' '{*}' && \
     sudo cat cert-$\{prod}-00.pem cert-$\{prod}-01.pem > /home/lab-user/$\{prod}-server.pem && \
     sudo cat cert-$\{prod}-02.pem > /home/lab-user/$\{prod}-root.pem && \
-    sudo cp /etc/letsencrypt/live/$\{prod}-{base_hostname}/privkey.pem /home/lab-user/$\{prod}-privkey.pem && \
+    sudo cp /etc/letsencrypt/live/$\{prod}.{base_hostname}/privkey.pem /home/lab-user/$\{prod}-privkey.pem && \
     sudo chown lab-user /home/lab-user/$\{prod}*.pem && \
     sudo chmod 660 /home/lab-user/$\{prod}*.pem && \
     cd /home/lab-user && \
