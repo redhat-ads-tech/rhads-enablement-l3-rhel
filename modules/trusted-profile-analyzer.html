@@ -192,7 +192,7 @@
 export BASE_HOSTNAME={base_hostname}
 export KEYCLOAK_REALM=chicken # yes, it really is chicken 🐔
 export KEYCLOAK_CLI_CLIENT_ID=cli
-export KEYCLOAK_URL=https://rhbk.${BASE_HOSTNAME}
+export KEYCLOAK_URL=https://rhbk.$BASE_HOSTNAME
 export OIDC_ISSUER_URL=$KEYCLOAK_URL/realms/$KEYCLOAK_REALM
 export OIDC_CLIENT_SECRET={rhbk_admin_password}</code></pre>
 </div>
@@ -547,11 +547,15 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 <div class="paragraph">
 <p>Access the <a href="https://rhtpa.{BASE_HOSTNAME}" target="_blank" rel="noopener">RHTPA web interface</a>. Login with the following credentials:</p>
 </div>
-<div class="listingblock execute">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">Username: {rhbk_admin_username}
-Password: {common_password}</code></pre>
-</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Username</strong>: <code>{rhbk_admin_username}</code></p>
+</li>
+<li>
+<p><strong>Password</strong>: <code>{common_password}</code></p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>You should land on the RHTPA dashboard:</p>
@@ -651,7 +655,7 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 <p>Ingest the SBOM into RHTPA:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @/tmp/test-sbom.json https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @/tmp/test-sbom.json https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -790,6 +794,9 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 </div>
 <div class="paragraph">
 <p>For more advanced configuration options (e.g. enabling OpenTelemetry tracing and metrics) and day-2 operation capabilities on RHEL, refer to the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer" target="_blank" rel="noopener">official Red Hat Trusted Profile Analyzer documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>This concludes the workshop on RHEL for Red Hat Trusted Profile Analyzer and Red Hat Trusted Artifact Signer.</p>
 </div>
 </div>
 </div>
