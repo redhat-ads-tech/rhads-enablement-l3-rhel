@@ -107,10 +107,10 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_create_certificates_temporary_solution"><a class="anchor" href="#_create_certificates_temporary_solution"></a>Create certificates (Temporary solution)</h2>
+<h2 id="_create_certificates"><a class="anchor" href="#_create_certificates"></a>Create certificates</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Your lab environment has been provisioned with a LetsEncrypt certificate to allow for trusted communication to be established between the various components. Different certificate requirements are needed when working with TAS and TPA and as a result, additional steps are needed to modify the provided certificate into formats that they require.</p>
+<p>Your lab environment has been provisioned with a set of free <a href="https://letsencrypt.org/" target="_blank" rel="noopener">LetsEncrypt</a> certificates to allow for trusted communication to be established between the various components. Most customers will use their own certs, but for this exercise, we&#8217;ll use the free certs, but we need to chop them up into the subsets that TAS and TPA require.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
