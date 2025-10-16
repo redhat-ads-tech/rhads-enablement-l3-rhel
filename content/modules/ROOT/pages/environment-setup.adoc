@@ -2,9 +2,9 @@
 
 Prior to starting the labs, there are a few steps that need to be completed first.
 
-== Create certificates (Temporary solution)
+== Create certificates
 
-Your lab environment has been provisioned with a LetsEncrypt certificate to allow for trusted communication to be established between the various components. Different certificate requirements are needed when working with TAS and TPA and as a result, additional steps are needed to modify the provided certificate into formats that they require.
+Your lab environment has been provisioned with a set of free https://letsencrypt.org/[LetsEncrypt^] certificates to allow for trusted communication to be established between the various components. Most customers will use their own certs, but for this exercise, we'll use the free certs, but we need to chop them up into the subsets that TAS and TPA require.
 
 . Open the terminal and copy and paste (you can click the small icon to the right of the command to copy, and then kbd:[CTRL-V] or kbd:[CMD-V] on MacOS to paste) the following and press kbd:[Enter] to run the command:
 +
