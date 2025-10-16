@@ -6,14 +6,15 @@ https://access.redhat.com/products/red-hat-trusted-artifact-signer/[Red Hat Trus
 
 The RHTAS service is the downstream redistribution of the https://sigstore.dev/[Sigstore project^].
 
-Although you _could_ independently install and configure the components of RHTAS, Red Hat *strongly* recommends using the supported Ansible collection to ensure you are using the latest version of the products and to leverage the latest features and bug fixes, and configure the many components of RHTAS in a consistent, secure, and repeatable manner. Much like Operators in Kubernetes, Ansible Automation provides an easy way to both install and do ongoing management of RHTAS. It can also be used in production environments using the same process you'll go through in this workshop.
+Although you _could_ independently install and configure the components of RHTAS, Red Hat *strongly* recommends using the supported Ansible collection to ensure you are using the latest version of the products and to leverage the latest features and bug fixes, and configure the many components of RHTAS in a consistent, secure, and repeatable manner. Much like Operators in Kubernetes, Ansible Automation provides an easy way to both install and handle ongoing management of RHTAS. Production environments can be managed using the same process you'll go through in this workshop.
 
-The automation contained in https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs[the Ansible collection you will use^] will install and configure the components of RHTAS to run on a single RHEL server, which uses a standalone containerized deployment. A Kubernetes-based manifest creates Kubernetes manifests for the containers and are deployed using `podman kube play`. This playbook will give you a basic signing framework, and enable various day-1 and day-2 operations using it going forward. Specifically, the playbook supports:
+// TODO verify "A Kubernetes-based manifest creates Kubernetes manifests" sicne it sounds odd
+The automation contained in https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs[the Ansible collection you will use^] will install and configure the components of RHTAS to run on a single RHEL server, which uses a standalone containerized deployment. A Kubernetes-based manifest creates Kubernetes manifests for the containers and deploys them on the RHEL host using https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html[`podman kube play`^]. This playbook will give you a basic signing framework, and enable various day-1 and day-2 operations going forward. Specifically, the playbook supports:
 
-* *Installation* of RHTAS on a single RHEL node
-* *Backup/Restore of TAS signing data* (protects the signing data of your software supply chain, critical when there is data loss due to hardware failure or accidental data deletion.)
+* *Installation* of RHTAS on a single RHEL node.
+* *Backup/Restore of TAS signing data* (protects the signing data of your software supply chain, critical when there is data loss due to hardware failure or accidental data deletion).
 * *Refreshing TUF metadata* (helping to maintain a secure coding environment for developers and prevent mix-and-match attacks on a code base).
-* *Certificate and key rotation* for Rekor, Certificate Transparency, Fulcio, and Timestamp Authority services (rotating these keys regularly can help prevent key tampering and theft.)
+* *Certificate and key rotation* for Rekor, Certificate Transparency, Fulcio, and Timestamp Authority services - these components will be explained soon (rotating these keys regularly can help prevent key tampering and theft).
 
 For more detail and examples of performing day-1 and day-2 operations with RHTAS, consult the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer/1.3/html/administration_guide/rhtas-rhel-admin[RHTAS RHEL administration documentation^].
 
@@ -23,19 +24,19 @@ The RHTAS Ansible collection deploys the following RHTAS components onto the `rh
 
 * https://github.com/sigstore/rekor[Rekor^] - An immutable, tamper-evident transparency log for storing and verifying software supply chain metadata.
 ** Trillian database - A Merkle tree-backed data store that underpins Rekor's transparency log.
-** Optional: A self-managed MariaDB instance (for durable SQL storage), and a Redis instance(caching and service management) (both highly recommended for production deployments to simplify operations and offload service management, including data backup and restoration).
+** Optional: A self-managed MariaDB instance (for durable SQL storage), and a Redis instance (for caching and service management) - both highly recommended for production deployments to simplify operations and offload service management, including data backup and restoration.
 * https://github.com/sigstore/fulcio[Fulcio^] - A certificate authority that issues short-lived code-signing certificates tied to an OpenID Connect (OIDC) identity.
 * Certificate Log - A transparency log that records issued certificates for auditability and trust verification.
 * Timestamp Authority - A service that provides trusted cryptographic timestamps to prove when data or signatures existed.
-* The Update Framework (TUF) server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
-* An https://www.nginx.com/[NGINX^] front end places an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establishing secure communications to the following hosts:
+* https://theupdateframework.io/[The Update Framework (TUF)^] server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
+* An https://www.nginx.com/[NGINX^] front end provides an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establish secure communication with the following hosts (these services are not available yet, but you'll deploy them shortly):
 +
-** `https://cli-server.{base_hostname}`
-** `https://fulcio.{base_hostname}`
-** `https://rekor.{base_hostname}`
-** `https://rekor-search.{base_hostname}`
-** `https://tsa.{base_hostname}`
-** `https://tuf.{base_hostname}`
+** `https://cli-server.{base_hostname}`[https://cli-server.{base_hostname}^]
+** `https://fulcio.{base_hostname}`[https://fulcio.{base_hostname}^]
+** `https://rekor.{base_hostname}`[https://rekor.{base_hostname}^]
+** `https://rekor-search.{base_hostname}`[https://rekor-search.{base_hostname}^]
+** `https://tsa.{base_hostname}`[https://tsa.{base_hostname}^]
+** `https://tuf.{base_hostname}`[https://tuf.{base_hostname}^]
 
 Each RHTAS release is associated with and installs specific versions of the above components. For more detail on these dependencies, visit the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer/1.2/html/release_notes/appendix_a_red_hat_trusted_artifact_signer_release_notes[Red Hat Trusted Artifact Signer Release Notes^].
 
@@ -70,7 +71,7 @@ export REKOR_REKOR_SERVER=$COSIGN_REKOR_URL
 export CLI_SERVER_URL=https://cli-server.$BASE_HOSTNAME
 ----
 +
-These environment variables define the various endpoints and configuration for the RHTAS service, and are read from the CLI commands you'll run later in the module.
+These environment variables define the various endpoints and configuration for the RHTAS service, and are read from the CLI commands you'll run later in the module. Note that the URLs being constructed correspond to the URLs listed previously.
 
 . Next, run these two commands, replacing the username and password or service account token with your own (don't just copy-paste, you'll need to replace the placeholders with your own values):
 +
@@ -237,10 +238,10 @@ ansible-navigator \# <1>
   --pae=false \# <6>
   -i inventory# <7>
 ----
-<1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do).
+<1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do). The execution environment is a container image (you can see it exists by running the `podman images` command)
 <2> Displays the output of the playbook in the terminal.
 <3> The specific execution environment in which the playbook runs and contains the required Ansible Collections for the products.
-<4> Only pull the execution environment if not already present locally (which it is))
+<4> Only pull the execution environment image if not already present locally (which it is)
 <5> The playbook to run.
 <6> Don't create playbook artifacts (like JSON log files)
 <7> The inventory file to use
@@ -269,7 +270,7 @@ This will run the `podman pod ps` command on the `rhtas` node. You should see a 
 ssh rhtas "sudo podman pod logs -f rekor-server-pod"
 ----
 +
-Press kbd:[CTRL-C] (or kbd:[CMD-C] on MacOS) to exit the log output. This can be useful for debugging issues with the RHTAS installation.
+Press kbd:[CTRL-C] to exit the log output. These commands can be useful for debugging issues with the RHTAS installation.
 
 == Verify Trusted Artifact Signer installation
 
@@ -279,7 +280,7 @@ After installation and configuration, you can verify that Red Hat Trusted Artifa
 
 `cosign` allows you to sign and verify Open Container Initiative (OCI) container images using RHTAS.
 
-. Download the cosign binary from the CLI server:
+. Download the cosign binary from the CLI server. The CLI server was deployed during the RHTAS installation:
 +
 [source,bash,role="execute"]
 ----
@@ -311,7 +312,7 @@ podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:1h
 rm ./tmp.Dockerfile
 ----
 
-. Push the image to a registry:
+. Push the image to a registry (the epehemeral https://ttl.sh[ttl.sh^] registry):
 +
 [source,bash,role="execute"]
 ----
@@ -503,7 +504,7 @@ Note the `Good signature` and Validation confirmations indicating that the signa
 
 The first two methods explored above verify the authenticity of the artifact (container image or Git commit) using the signature and attestation. Conforma takes it a step further by verifying the artifact against a set of policies.
 
-Conforma, formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the `ec` binary to verify the attestation(verifiable claims about any aspect of how a piece of software is produced) and signature of container images that use Red Hat's Trusted Artifact Signer (RHTAS) signing framework. This is typically used in CI pipelines during container image promotion and deployment. Conforma policies are defined using the https://www.openpolicyagent.org/docs/policy-language[rego policy language^]. 
+https://conforma.dev/[Conforma^], formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the `ec` binary to verify the attestation (verifiable claims about any aspect of how a piece of software is produced) and signature of container images that use Red Hat's Trusted Artifact Signer (RHTAS) signing framework. This is typically used in CI pipelines during container image promotion and deployment. Conforma policies are defined using the https://www.openpolicyagent.org/docs/policy-language[rego policy language^]. 
 
 . Download the ec binary from the CLI server:
 +
