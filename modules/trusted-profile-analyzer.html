@@ -127,7 +127,7 @@
 <p>Know that trusted components are in use as early as possible</p>
 </li>
 <li>
-<p>Reduce alert fatigue with fewer false positive by getting vendor vulnerability information from the actual vendor (VEX)</p>
+<p>Reduce alert fatigue with fewer false positive by getting vendor vulnerability information from the actual vendor (<a href="https://cyclonedx.org/capabilities/vex/" target="_blank" rel="noopener">VEX</a>)</p>
 </li>
 <li>
 <p>Analyze applications without downloading and installing</p>
@@ -294,7 +294,7 @@ EOF</code></pre>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>The system packages to install on the node.</td>
+<td>The certs to install on the node.</td>
 </tr>
 </table>
 </div>
@@ -319,6 +319,7 @@ EOF</code></pre>
     - name: Set fact to bind to all interfaces
       ansible.builtin.set_fact:
         tpa_single_node_rhel_host: "0.0.0.0"
+
     - name: Create Required Directories
       ansible.builtin.file:
         path: "{{ item }}"
@@ -327,6 +328,7 @@ EOF</code></pre>
         - "/root/.config/containers"
         - "{{ tpa_single_node_kube_manifest_dir }}"
         - "{{ tpa_single_node_kube_manifest_dir }}/Secrets"
+
     - name: Create Policy File
       ansible.builtin.copy:
         dest: /root/.config/containers/policy.json
@@ -371,6 +373,7 @@ EOF</code></pre>
       ansible.builtin.include_role:
         name: redhat.trusted_profile_analyzer.tpa_single_node
         tasks_from: podman.yml
+
     - name: Call trusted_profile_analyzer role
       ansible.builtin.include_role:
         name: redhat.trusted_profile_analyzer.tpa_single_node
@@ -469,7 +472,7 @@ ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Only pull the execution environment if not already present locally (which it is))</td>
+<td>Only pull the execution environment image if not already present locally (which it is)</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
@@ -540,7 +543,7 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 </div>
 </div>
 <div class="paragraph">
-<p>Press <kbd>CTRL-C</kbd> (or <kbd>CMD-C</kbd> on MacOS) to exit the log output. This can be useful for debugging issues with the RHTPA installation.</p>
+<p>Press <kbd>CTRL-C</kbd> to exit the log output. This can be useful for debugging issues with the RHTPA installation.</p>
 </div>
 <div class="sect2">
 <h3 id="_access_the_rhtpa_web_interface"><a class="anchor" href="#_access_the_rhtpa_web_interface"></a>Access the RHTPA web interface</h3>
