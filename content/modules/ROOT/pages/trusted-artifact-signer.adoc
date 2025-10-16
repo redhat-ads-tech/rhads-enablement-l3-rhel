@@ -8,7 +8,7 @@ The RHTAS service is the downstream redistribution of the https://sigstore.dev/[
 
 Although you _could_ independently install and configure the components of RHTAS, Red Hat *strongly* recommends using the supported Ansible collection to ensure you are using the latest version of the products and to leverage the latest features and bug fixes, and configure the many components of RHTAS in a consistent, secure, and repeatable manner. Much like Operators in Kubernetes, Ansible Automation provides an easy way to both install and handle ongoing management of RHTAS. Production environments can be managed using the same process you'll go through in this workshop.
 
-// TODO verify "A Kubernetes-based manifest creates Kubernetes manifests" sicne it sounds odd
+// TODO verify "A Kubernetes-based manifest creates Kubernetes manifests" since it sounds odd
 The automation contained in https://console.redhat.com/ansible/automation-hub/repo/published/redhat/artifact_signer/docs[the Ansible collection you will use^] will install and configure the components of RHTAS to run on a single RHEL server, which uses a standalone containerized deployment. A Kubernetes-based manifest creates Kubernetes manifests for the containers and deploys them on the RHEL host using https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html[`podman kube play`^]. This playbook will give you a basic signing framework, and enable various day-1 and day-2 operations going forward. Specifically, the playbook supports:
 
 * *Installation* of RHTAS on a single RHEL node.
@@ -312,7 +312,7 @@ podman build . -f ./tmp.Dockerfile -t ttl.sh/rhtas/test-image-$GUID:1h
 rm ./tmp.Dockerfile
 ----
 
-. Push the image to a registry (the epehemeral https://ttl.sh[ttl.sh^] registry):
+. Push the image to a registry (the ephemeral https://ttl.sh[ttl.sh^] registry):
 +
 [source,bash,role="execute"]
 ----
