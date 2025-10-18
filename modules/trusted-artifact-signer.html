@@ -277,8 +277,8 @@ export REGISTRY_PASSWORD='&lt;your password or service account token&gt;'</code>
 tas_single_node_base_hostname: "$BASE_HOSTNAME" <i class="conum" data-value="1"></i><b>(1)</b>
 
 # Registry Configurations
-tas_single_node_registry_username: "$REGISTRY_USERNAME"
-tas_single_node_registry_password: "$REGISTRY_PASSWORD"
+tas_single_node_registry_username: ""
+tas_single_node_registry_password: ""
 
 # Certificates <i class="conum" data-value="2"></i><b>(2)</b>
 tas_ingress_certificate_root_ca_file: "/home/lab-user/rhtas-root.pem"
@@ -460,7 +460,9 @@ ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
   --pp=missing \<i class="conum" data-value="4"></i><b>(4)</b>
   run install_rhtas.yml \<i class="conum" data-value="5"></i><b>(5)</b>
   --pae=false \<i class="conum" data-value="6"></i><b>(6)</b>
-  -i inventory<i class="conum" data-value="7"></i><b>(7)</b></code></pre>
+  -i inventory \<i class="conum" data-value="7"></i><b>(7)</b>
+  -e tas_single_node_registry_username="$REGISTRY_USERNAME" \<i class="conum" data-value="8"></i><b>(8)</b>
+  -e tas_single_node_registry_password="$REGISTRY_PASSWORD" <i class="conum" data-value="9"></i><b>(9)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -491,7 +493,15 @@ ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>The inventory file to use
+<td>The inventory file to use</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>The registry username to use</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>The registry password to use
 <div class="paragraph">
 <p>The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:</p>
 </div>
@@ -1162,7 +1172,9 @@ ansible-navigator \
   run install_rhtas.yml \
   --pae=false \
   -i inventory \
-  -e @rhtas_trust_root_update.yml</code></pre>
+  -e @rhtas_trust_root_update.yml \
+  -e tas_single_node_registry_username="$REGISTRY_USERNAME" \
+  -e tas_single_node_registry_password="$REGISTRY_PASSWORD"</code></pre>
 </div>
 </div>
 <div class="paragraph">

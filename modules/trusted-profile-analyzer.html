@@ -239,8 +239,8 @@ rhel: true
 
 # Image Configurations
 tpa_single_node_trustification_image: registry.redhat.io/rhtpa/rhtpa-trustification-service-rhel9:2.1.0
-tpa_single_node_registry_username: "$REGISTRY_USERNAME"
-tpa_single_node_registry_password: "$REGISTRY_PASSWORD"
+tpa_single_node_registry_username: ""
+tpa_single_node_registry_password: ""
 
 # PostgreSQL <i class="conum" data-value="1"></i><b>(1)</b>
 tpa_single_node_pg_host: utility
@@ -453,7 +453,9 @@ ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
   run install_rhtpa.yml \<i class="conum" data-value="5"></i><b>(5)</b>
   -e @rhtpa_vars.yml \<i class="conum" data-value="6"></i><b>(6)</b>
   --pae=false \<i class="conum" data-value="7"></i><b>(7)</b>
-  -i inventory<i class="conum" data-value="8"></i><b>(8)</b></code></pre>
+  -i inventory \<i class="conum" data-value="8"></i><b>(8)</b>
+  -e tpa_single_node_registry_username="$REGISTRY_USERNAME" \<i class="conum" data-value="9"></i><b>(9)</b>
+  -e tpa_single_node_registry_password="$REGISTRY_PASSWORD" <i class="conum" data-value="10"></i><b>(10)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -489,6 +491,14 @@ ansible-navigator \<i class="conum" data-value="1"></i><b>(1)</b>
 <tr>
 <td><i class="conum" data-value="8"></i><b>8</b></td>
 <td>The inventory file to use</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>The registry username to use</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="10"></i><b>10</b></td>
+<td>The registry password to use</td>
 </tr>
 </table>
 </div>
@@ -599,16 +609,11 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 </div>
 <div class="sect2">
 <h3 id="_create_your_first_sbom"><a class="anchor" href="#_create_your_first_sbom"></a>Create your first SBOM</h3>
+<div class="paragraph">
+<p>To create SBOMs, we&#8217;ll use <a href="https://github.com/anchore/syft" target="_blank" rel="noopener">Syft</a> (an open source tool for creating SBOMs). Red Hat provides a pre-built container for use on RHEL for syft, which we&#8217;ll use to create our first SBOM.</p>
+</div>
 <div class="olist arabic">
 <ol class="arabic">
-<li>
-<p>First, you&#8217;ll need a tool to create SBOMs. We&#8217;ll use <a href="https://github.com/anchore/syft" target="_blank" rel="noopener">Syft</a> (an open source tool for creating SBOMs) for this exercise. Run the following command to install <code>syft</code>:</p>
-<div class="listingblock execute">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin</code></pre>
-</div>
-</div>
-</li>
 <li>
 <p>Create a test container image for which we&#8217;ll create an SBOM. Create the image with this command:</p>
 <div class="listingblock execute">
@@ -624,11 +629,32 @@ podman push ttl.sh/rhtas/test-image-$GUID:3h</code></pre>
 <p>Run this command to generate a new SBOM in the <a href="https://spdx.github.io/spdx-spec/v2.3/" target="_blank" rel="noopener">SPDX version 2.3 format</a> and output it in JSON format (and write it to a file with <code>tee</code>):</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">syft ttl.sh/rhtas/test-image-$GUID:3h -o spdx-json@2.3 | tee /tmp/test-sbom.json | jq</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman run --rm \
+  -e SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=true \<i class="conum" data-value="1"></i><b>(1)</b>
+  registry.redhat.io/rh-syft-tech-preview/syft-rhel9:1.29.0 \<i class="conum" data-value="2"></i><b>(2)</b>
+  registry:ttl.sh/rhtas/test-image-$GUID:3h \<i class="conum" data-value="3"></i><b>(3)</b>
+  -o spdx-json@2.3 | tee /tmp/test-sbom.json | jq <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulnerabilities.</p>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Since we are using locally-signed certs, skip TLS verification when pulling the test image from the ttl.sh registry.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The pre-built <code>syft</code> container from Red Hat.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The test image to create an SBOM for.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The output is written to a file with <code>tee</code> and then piped to <code>jq</code> to pretty print the JSON.</td>
+</tr>
+</table>
 </div>
 </li>
 </ol>
@@ -655,7 +681,7 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 </div>
 </li>
 <li>
-<p>Ingest the SBOM into RHTPA:</p>
+<p>Ingest the SBOM from <code>/tmp/test-sbom.json</code> into RHTPA:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @/tmp/test-sbom.json https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq</code></pre>
@@ -692,10 +718,10 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 </div>
 </div>
 <div class="paragraph">
-<p>You should see the SBOM details, including the packages and their vulnerabilities.</p>
+<p>You should see the SBOM details, including the packages and their vulnerabilities. This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulnerabilities.</p>
 </div>
 <div class="paragraph">
-<p>This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the <em>API</em> tab (which takes you to the <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification</a> for RHTPA endpoints):</p>
+<p>This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the various API endpoints by clicking on the <em>API</em> tab (which takes you to an interactive <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification for RHTPA endpoints</a>):</p>
 </div>
 </li>
 </ol>
@@ -709,7 +735,7 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 <div class="sect2">
 <h3 id="_ingest_a_more_interesting_sbom"><a class="anchor" href="#_ingest_a_more_interesting_sbom"></a>Ingest a More Interesting SBOM</h3>
 <div class="paragraph">
-<p>Let&#8217;s try again with a more interesting SBOM. We&#8217;ll use the <code>registry.redhat.io/rhel10/httpd-24</code> image, which is a Red Hat Enterprise Linux 10 image with the HTTPD package installed.</p>
+<p>Let&#8217;s try again with a more interesting SBOM. We&#8217;ll use the <code>registry.access.redhat.com/ubi10/httpd-24</code> image, which is a Red Hat Enterprise Linux 10 image with the HTTPD package installed.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -717,18 +743,50 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 <p>Run the following command to generate the SBOM and ingest it into RHTPA in one command:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">syft registry.redhat.io/rhel10/httpd-24 -o spdx-json@2.3 | \
-curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
-  https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman run --rm \
+  -e SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=true \<i class="conum" data-value="1"></i><b>(1)</b>
+  registry.redhat.io/rh-syft-tech-preview/syft-rhel9:1.29.0 \<i class="conum" data-value="2"></i><b>(2)</b>
+  registry:registry.access.redhat.com/ubi10/httpd-24 \<i class="conum" data-value="3"></i><b>(3)</b>
+  -o spdx-json@2.3 | \<i class="conum" data-value="4"></i><b>(4)</b>
+  curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \<i class="conum" data-value="5"></i><b>(5)</b>
+  "https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom" | jq <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
 </div>
 </div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Since we are using locally-signed certs, skip TLS verification when pulling the test image from the Red Hat registry.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The pre-built <code>syft</code> container from Red Hat.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The more interesting image to create an SBOM for.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The output format for the SBOM. The output is then piped to <code>curl</code> to ingest the SBOM into RHTPA using the <code>/api/v2/sbom</code> endpoint.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Add the authorization token to the request to authenticate to the RHTPA API (generated with the <code>oidc-cli</code> command as before)</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The output is pretty printed using <code>jq</code>.
 <div class="paragraph">
-<p>You will see a giant JSON object of the resulting SBOM (and there will be lots of <code>Invalid reference</code> messages as none of of the packages are known to our mostly empty SBOM database). But back on the RHTPA web interface, click on <em>SBOMs</em> and you should see the new SBOM in the database:</p>
+<p>You will see a giant JSON object of the resulting SBOM (and there will be lots of <code>Invalid reference</code> messages as none of of the packages are known to our mostly empty SBOM database). But back on the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, click on <em>SBOMs</em> and you should see the new SBOM in the database:</p>
 </div>
 <div class="imageblock">
 <div class="content">
 <img src="_images/rhtpa-sbom-ingested2.png" alt="rhtpa sbom ingested2">
 </div>
+</div></td>
+</tr>
+</table>
 </div>
 </li>
 <li>
@@ -754,9 +812,6 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 <img src="_images/rhtpa-importer-enable.png" alt="rhtpa importer enable">
 </div>
 </div>
-</li>
-</ol>
-</div>
 <div class="imageblock">
 <div class="content">
 <img src="_images/rhtpa-dashboard2.png" alt="rhtpa dashboard2">
@@ -766,6 +821,9 @@ curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
 <div class="content">
 <img src="_images/rhtpa-dashboard3.png" alt="rhtpa dashboard3">
 </div>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
