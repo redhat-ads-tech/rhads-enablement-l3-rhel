@@ -350,19 +350,25 @@ podman run --rm \
 
 === Ingest the SBOM into RHTPA
 
-. RHTPA exposes an API that you can use to ingest SBOMs. You could use raw `curl` commands to do the ingestion, but we'll use an Open ID Connect tool called `oidc-cli`to handle the authentication. Install the tool with these commands:
+RHTPA exposes an API that you can use to ingest SBOMs. You could use raw `curl` commands to do the ingestion, but we'll use an Open ID Connect tool called `oidc-cli` to handle the authentication.
+
+. Install the `oidc-cli` tool with these commands:
 +
 [source,bash,role="execute"]
 ----
 curl -L -o /tmp/oidc-cli https://github.com/ctron/oidc-cli/releases/download/v0.6.2/oidc-x86_64-unknown-linux-gnu && \
 chmod a+x /tmp/oidc-cli && \
-sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli && \
+sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli
+----
++
+. Using `oidc-cli`, create a short-lived confidential client session in Keycloak for you to use to authenticate to the RHTPA API:
++
+[source,bash,role="execute"]
+----
 oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
          --client-id $KEYCLOAK_CLI_CLIENT_ID \
          --client-secret $OIDC_CLIENT_SECRET
 ----
-+
-The last `oidc-cli` command creates a short-lived confidential client session in Keycloak for you to use to authenticate to the RHTPA API.
 
 . Ingest the SBOM from `/tmp/test-sbom.json` into RHTPA:
 +
@@ -383,7 +389,9 @@ You should see something like:
 }
 ----
 +
-The output contains a unique ID for the entry and the ingested SBOM. Head back to the https://rhtpa.{base_hostname}[RHTPA web interface^], reload the page and you should how have 1 SBOM in the database:
+The output contains a unique ID for the entry and the ingested SBOM.
+
+. Head back to the https://rhtpa.{base_hostname}[RHTPA web interface^], reload the page and you should how have 1 SBOM in the database:
 +
 image::rhtpa-sbom-ingested.png[]
 
