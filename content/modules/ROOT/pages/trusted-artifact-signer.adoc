@@ -31,12 +31,12 @@ The RHTAS Ansible collection deploys the following RHTAS components onto the `rh
 * https://theupdateframework.io/[The Update Framework (TUF)^] server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
 * An https://www.nginx.com/[NGINX^] front end provides an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establish secure communication with the following hosts (these services are not available yet, but you'll deploy them shortly):
 +
-** `https://cli-server.{base_hostname}`[https://cli-server.{base_hostname}^]
-** `https://fulcio.{base_hostname}`[https://fulcio.{base_hostname}^]
-** `https://rekor.{base_hostname}`[https://rekor.{base_hostname}^]
-** `https://rekor-search.{base_hostname}`[https://rekor-search.{base_hostname}^]
-** `https://tsa.{base_hostname}`[https://tsa.{base_hostname}^]
-** `https://tuf.{base_hostname}`[https://tuf.{base_hostname}^]
+** `https://cli-server.{base_hostname}`
+** `https://fulcio.{base_hostname}`
+** `https://rekor.{base_hostname}`
+** `https://rekor-search.{base_hostname}`
+** `https://tsa.{base_hostname}`
+** `https://tuf.{base_hostname}`
 
 Each RHTAS release is associated with and installs specific versions of the above components. For more detail on these dependencies, visit the https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer/1.2/html/release_notes/appendix_a_red_hat_trusted_artifact_signer_release_notes[Red Hat Trusted Artifact Signer Release Notes^].
 
