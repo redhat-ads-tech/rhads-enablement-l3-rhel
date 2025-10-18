@@ -81,8 +81,8 @@ rhel: true
 
 # Image Configurations
 tpa_single_node_trustification_image: registry.redhat.io/rhtpa/rhtpa-trustification-service-rhel9:2.1.0
-tpa_single_node_registry_username: "$REGISTRY_USERNAME"
-tpa_single_node_registry_password: "$REGISTRY_PASSWORD"
+tpa_single_node_registry_username: ""
+tpa_single_node_registry_password: ""
 
 # PostgreSQL # <1>
 tpa_single_node_pg_host: utility
@@ -238,7 +238,9 @@ ansible-navigator \# <1>
   run install_rhtpa.yml \# <5>
   -e @rhtpa_vars.yml \# <6>
   --pae=false \# <7>
-  -i inventory# <8>
+  -i inventory \# <8>
+  -e tpa_single_node_registry_username="$REGISTRY_USERNAME" \# <9>
+  -e tpa_single_node_registry_password="$REGISTRY_PASSWORD" # <10>
 ----
 <1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do).
 <2> Displays the output of the playbook in the terminal.
@@ -248,6 +250,8 @@ ansible-navigator \# <1>
 <6> The variables file to use.
 <7> Don't create playbook artifacts (like JSON log files)
 <8> The inventory file to use
+<9> The registry username to use
+<10> The registry password to use
 
 The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:
 
@@ -314,12 +318,7 @@ So you see out of the box are thousands of known advisories and vulnerabilities 
 
 === Create your first SBOM
 
-. First, you'll need a tool to create SBOMs. We'll use https://github.com/anchore/syft[Syft^] (an open source tool for creating SBOMs) for this exercise. Run the following command to install `syft`:
-+
-[source,bash,role="execute"]
-----
-curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin
-----
+To create SBOMs, we'll use https://github.com/anchore/syft[Syft^] (an open source tool for creating SBOMs). Red Hat provides a pre-built container for use on RHEL for syft, which we'll use to create our first SBOM.
 
 . Create a test container image for which we'll create an SBOM. Create the image with this command:
 +
@@ -335,10 +334,16 @@ podman push ttl.sh/rhtas/test-image-$GUID:3h
 +
 [source,bash,role="execute"]
 ----
-syft ttl.sh/rhtas/test-image-$GUID:3h -o spdx-json@2.3 | tee /tmp/test-sbom.json | jq
+podman run --rm \
+  -e SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=true \# <1>
+  registry.redhat.io/rh-syft-tech-preview/syft-rhel9:1.29.0 \# <2>
+  registry:ttl.sh/rhtas/test-image-$GUID:3h \# <3>
+  -o spdx-json@2.3 | tee /tmp/test-sbom.json | jq # <4>
 ----
-+
-This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulnerabilities.
+<1> Since we are using locally-signed certs, skip TLS verification when pulling the test image from the ttl.sh registry.
+<2> The pre-built `syft` container from Red Hat.
+<3> The test image to create an SBOM for.
+<4> The output is written to a file with `tee` and then piped to `jq` to pretty print the JSON. 
 
 === Ingest the SBOM into RHTPA
 
@@ -356,7 +361,7 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 +
 The last `oidc-cli` command creates a short-lived confidential client session in Keycloak for you to use to authenticate to the RHTPA API.
 
-. Ingest the SBOM into RHTPA:
+. Ingest the SBOM from `/tmp/test-sbom.json` into RHTPA:
 +
 [source,bash,role="execute"]
 ----
@@ -383,26 +388,36 @@ image::rhtpa-sbom-ingested.png[]
 +
 image::rhtpa-sbom-details.png[]
 +
-You should see the SBOM details, including the packages and their vulnerabilities.
+You should see the SBOM details, including the packages and their vulnerabilities. This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulnerabilities.
 +
-This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the _API_ tab (which takes you to the https://rhtpa.{base_hostname}/openapi[OpenAPI specification^] for RHTPA endpoints):
+This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the various API endpoints by clicking on the _API_ tab (which takes you to an interactive https://rhtpa.{base_hostname}/openapi[OpenAPI specification for RHTPA endpoints^]):
 
 image::rhtpa-api.png[]
 
 === Ingest a More Interesting SBOM
 
-Let's try again with a more interesting SBOM. We'll use the `registry.redhat.io/rhel10/httpd-24` image, which is a Red Hat Enterprise Linux 10 image with the HTTPD package installed.
+Let's try again with a more interesting SBOM. We'll use the `registry.access.redhat.com/ubi10/httpd-24` image, which is a Red Hat Enterprise Linux 10 image with the HTTPD package installed.
 
 . Run the following command to generate the SBOM and ingest it into RHTPA in one command:
 +
 [source,bash,role="execute"]
 ----
-syft registry.redhat.io/rhel10/httpd-24 -o spdx-json@2.3 | \
-curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \
-  https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq
+podman run --rm \
+  -e SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=true \# <1>
+  registry.redhat.io/rh-syft-tech-preview/syft-rhel9:1.29.0 \# <2>
+  registry:registry.access.redhat.com/ubi10/httpd-24 \# <3>
+  -o spdx-json@2.3 | \# <4>
+  curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @- \# <5>
+  "https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom" | jq # <6>
 ----
+<1> Since we are using locally-signed certs, skip TLS verification when pulling the test image from the Red Hat registry.
+<2> The pre-built `syft` container from Red Hat.
+<3> The more interesting image to create an SBOM for.
+<4> The output format for the SBOM. The output is then piped to `curl` to ingest the SBOM into RHTPA using the `/api/v2/sbom` endpoint.
+<5> Add the authorization token to the request to authenticate to the RHTPA API (generated with the `oidc-cli` command as before)
+<6> The output is pretty printed using `jq`.
 +
-You will see a giant JSON object of the resulting SBOM (and there will be lots of `Invalid reference` messages as none of of the packages are known to our mostly empty SBOM database). But back on the RHTPA web interface, click on _SBOMs_ and you should see the new SBOM in the database:
+You will see a giant JSON object of the resulting SBOM (and there will be lots of `Invalid reference` messages as none of of the packages are known to our mostly empty SBOM database). But back on the https://rhtpa.{base_hostname}[RHTPA web interface^], click on _SBOMs_ and you should see the new SBOM in the database:
 +
 image::rhtpa-sbom-ingested2.png[]
 
@@ -417,11 +432,10 @@ image::rhtpa-search.png[]
 By populating RHTPA with your own SBOMs as part of your CI pipelines _for each and every build_, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the _Importers_ tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you'll see more interesting results:
 +
 image::rhtpa-importer-enable.png[]
-
++
 image::rhtpa-dashboard2.png[]
-
++
 image::rhtpa-dashboard3.png[]
-
 
 == Next Steps
 

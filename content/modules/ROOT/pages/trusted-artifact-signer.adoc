@@ -29,7 +29,7 @@ The RHTAS Ansible collection deploys the following RHTAS components onto the `rh
 * Timestamp Authority - A service that provides trusted cryptographic timestamps to prove when data or signatures existed.
 * The Update Framework (TUF) server - A secure distribution system that manages and delivers software updates with integrity and resilience against compromise.
 * An https://www.nginx.com/[NGINX^] front end places an entrypoint to the various backend components. A set of self-signed certificates get generated at runtime to establishing secure communications to the following hosts:
-+
+
 ** `https://cli-server.{base_hostname}`
 ** `https://fulcio.{base_hostname}`
 ** `https://rekor.{base_hostname}`
@@ -100,8 +100,8 @@ cat << EOF > ~/rhtas_vars.yml
 tas_single_node_base_hostname: "$BASE_HOSTNAME" # <1>
 
 # Registry Configurations
-tas_single_node_registry_username: "$REGISTRY_USERNAME"
-tas_single_node_registry_password: "$REGISTRY_PASSWORD"
+tas_single_node_registry_username: ""
+tas_single_node_registry_password: ""
 
 # Certificates <2>
 tas_ingress_certificate_root_ca_file: "/home/lab-user/rhtas-root.pem" 
@@ -235,7 +235,9 @@ ansible-navigator \# <1>
   --pp=missing \# <4>
   run install_rhtas.yml \# <5>
   --pae=false \# <6>
-  -i inventory# <7>
+  -i inventory \# <7>
+  -e tas_single_node_registry_username="$REGISTRY_USERNAME" \# <8>
+  -e tas_single_node_registry_password="$REGISTRY_PASSWORD" # <9>
 ----
 <1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do).
 <2> Displays the output of the playbook in the terminal.
@@ -244,6 +246,8 @@ ansible-navigator \# <1>
 <5> The playbook to run.
 <6> Don't create playbook artifacts (like JSON log files)
 <7> The inventory file to use
+<8> The registry username to use
+<9> The registry password to use
 +
 The installation will take several minutes to complete. Wait for it to finish before moving on! It should end with:
 +
@@ -728,7 +732,9 @@ ansible-navigator \
   run install_rhtas.yml \
   --pae=false \
   -i inventory \
-  -e @rhtas_trust_root_update.yml
+  -e @rhtas_trust_root_update.yml \
+  -e tas_single_node_registry_username="$REGISTRY_USERNAME" \
+  -e tas_single_node_registry_password="$REGISTRY_PASSWORD"
 ----
 +
 Wait for the playbook to finish (it will take a few minutes, and you may notice lines related to the usage of the supplied archive).
