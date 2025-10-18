@@ -11,7 +11,7 @@ It addresses some of the problems developers and platform engineers face when ke
 * Deploy applications with fewer vulnerabilities
 * Meet compliance regulations for SBOM management and archiving
 * Know that trusted components are in use as early as possible
-* Reduce alert fatigue with fewer false positive by getting vendor vulnerability information from the actual vendor (VEX)
+* Reduce alert fatigue with fewer false positive by getting vendor vulnerability information from the actual vendor (https://cyclonedx.org/capabilities/vex/[VEX^])
 * Analyze applications without downloading and installing
 
 Practically speaking, RHTPA is a service that:
@@ -119,7 +119,7 @@ EOF
 <2> This uses the pre-installed Keycloak instance as the OpenID Connect provider.
 <3> The name of the network to use for the Podman containers. It is created automatically by the playbook.
 <4> The directory to store the Kubernetes manifests for the Podman containers.
-<5> The system packages to install on the node.
+<5> The certs to install on the node.
 
 === Create Ansible Playbook
 
@@ -136,6 +136,7 @@ cat << EOF > ~/install_rhtpa.yml
     - name: Set fact to bind to all interfaces
       ansible.builtin.set_fact:
         tpa_single_node_rhel_host: "0.0.0.0"
+
     - name: Create Required Directories
       ansible.builtin.file:
         path: "{{ item }}"
@@ -144,6 +145,7 @@ cat << EOF > ~/install_rhtpa.yml
         - "/root/.config/containers"
         - "{{ tpa_single_node_kube_manifest_dir }}"
         - "{{ tpa_single_node_kube_manifest_dir }}/Secrets"
+
     - name: Create Policy File
       ansible.builtin.copy:
         dest: /root/.config/containers/policy.json
@@ -188,6 +190,7 @@ cat << EOF > ~/install_rhtpa.yml
       ansible.builtin.include_role:
         name: redhat.trusted_profile_analyzer.tpa_single_node
         tasks_from: podman.yml
+
     - name: Call trusted_profile_analyzer role
       ansible.builtin.include_role:
         name: redhat.trusted_profile_analyzer.tpa_single_node
@@ -245,7 +248,7 @@ ansible-navigator \# <1>
 <1> Ansible Navigator is used to enable running the playbook in the specific execution environment (which `ansible-playbook` cannot do).
 <2> Displays the output of the playbook in the terminal.
 <3> The specific execution environment in which the playbook runs and contains the required Ansible Collections for the products.
-<4> Only pull the execution environment if not already present locally (which it is))
+<4> Only pull the execution environment image if not already present locally (which it is)
 <5> The playbook to run.
 <6> The variables file to use.
 <7> Don't create playbook artifacts (like JSON log files)
@@ -290,7 +293,7 @@ You can also retrieve logs of the services (e.g. the server service) by running 
 ssh rhtpa "sudo podman pod logs -f server-pod"
 ----
 
-Press kbd:[CTRL-C] (or kbd:[CMD-C] on MacOS) to exit the log output. This can be useful for debugging issues with the RHTPA installation.
+Press kbd:[CTRL-C] to exit the log output. This can be useful for debugging issues with the RHTPA installation.
 
 === Access the RHTPA web interface
 

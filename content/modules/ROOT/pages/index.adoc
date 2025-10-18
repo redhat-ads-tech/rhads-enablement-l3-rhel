@@ -1,13 +1,13 @@
 = {lab_name}
 
-Welcome to the Red Hat Advanced Developer Suite Enablement (RHADS) workshop on RHEL. This workshop provides hands-on experience with two critical Red Hat security solutions for https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux[Red Hat Enterprise Linux^] environments that are included in RHADS: https://developers.redhat.com/products/trusted-artifact-signer/overview[Red Hat Trusted Artifact Signer (RHTAS)^] and https://developers.redhat.com/products/trusted-profile-analyzer/overview[Red Hat Trusted Profile Analyzer (RHTPA)^]. Unlike Red Hat Developer Hub, RHTAS and RHTPA are fully supported on RHEL.
+Welcome to the Red Hat Advanced Developer Suite (RHADS) Enablement workshop on RHEL. This workshop provides hands-on experience with two critical Red Hat security solutions for https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux[Red Hat Enterprise Linux^] environments; https://developers.redhat.com/products/trusted-artifact-signer/overview[Red Hat Trusted Artifact Signer (RHTAS)^] and https://developers.redhat.com/products/trusted-profile-analyzer/overview[Red Hat Trusted Profile Analyzer (RHTPA)^]. Both products are included in RHADS. Unlike Red Hat Developer Hub, RHTAS and RHTPA are fully supported on RHEL.
 
 == Use Cases
 
-Use of RHTAS and RHTPA on RHEL is generally used when:
+Use of RHTAS and RHTPA on RHEL is recommended when:
 
 * You wish to ensure the integrity and authenticity of your software artifacts in a pure RHEL environment, and you have familiarity with RHEL administration and configuration.
-* You deploy RHADS on non-RHEL or non-OpenShift environments (e.g. xKS) for development and production, but you wish to use RHADS security components (RHTAS and RHTPA) to secure your software supply chain. This is a common use case for customers who deploy Red Hat Developer Hub (part of RHADS) on non-Red Hat platforms, but need security in their CI pipelines. Other modules in the RHADS Enablement course shows how to do this on OpenShift.
+* You deploy RHADS on non-RHEL or non-OpenShift environments (e.g. xKS) for development and production, but you wish to use RHADS security components (RHTAS and RHTPA) to secure your software supply chain. This is a common use case for customers who deploy Red Hat Developer Hub (part of RHADS) on non-Red Hat platforms, but need security in their CI pipelines. Other modules in the RHADS Enablement course show how to do this on OpenShift.
 
 === RHEL vs. OpenShift
 
@@ -19,7 +19,7 @@ Use of RHTAS and RHTPA on RHEL is generally used when:
 
 On RHEL, TAS and TPA are deployed as podman pods (so some concepts from Kubernetes like Deployments, ConfigMaps, etc apply), and are configured as system services (via `systemd`) that are managed through traditional RHEL administration tools and processes, including security (firewall, SELinux, etc.) and networking (firewall, routing, etc.). You can use the provided Ansible playbooks to do administrative tasks like backup/restore, key rotation, and more.
 
-=== Benefits of RHTAS and RHTPA on RHEL
+=== Why run RHTAS and RHTPA on RHEL?
 
 * Full control over installation and configuration (manual or Ansible-driven).
 * Can run on bare metal or virtual machines without needing a Kubernetes/OpenShift cluster.
