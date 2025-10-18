@@ -662,22 +662,29 @@ podman push ttl.sh/rhtas/test-image-$GUID:3h</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_ingest_the_sbom_into_rhtpa"><a class="anchor" href="#_ingest_the_sbom_into_rhtpa"></a>Ingest the SBOM into RHTPA</h3>
+<div class="paragraph">
+<p>RHTPA exposes an API that you can use to ingest SBOMs. You could use raw <code>curl</code> commands to do the ingestion, but we&#8217;ll use an Open ID Connect tool called <code>oidc-cli</code> to handle the authentication.</p>
+</div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>RHTPA exposes an API that you can use to ingest SBOMs. You could use raw <code>curl</code> commands to do the ingestion, but we&#8217;ll use an Open ID Connect tool called `oidc-cli`to handle the authentication. Install the tool with these commands:</p>
+<p>Install the <code>oidc-cli</code> tool with these commands:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -L -o /tmp/oidc-cli https://github.com/ctron/oidc-cli/releases/download/v0.6.2/oidc-x86_64-unknown-linux-gnu &amp;&amp; \
 chmod a+x /tmp/oidc-cli &amp;&amp; \
-sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli &amp;&amp; \
-oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
+sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Using <code>oidc-cli</code>, create a short-lived confidential client session in Keycloak for you to use to authenticate to the RHTPA API:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
          --client-id $KEYCLOAK_CLI_CLIENT_ID \
          --client-secret $OIDC_CLIENT_SECRET</code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p>The last <code>oidc-cli</code> command creates a short-lived confidential client session in Keycloak for you to use to authenticate to the RHTPA API.</p>
 </div>
 </li>
 <li>
@@ -702,8 +709,11 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
 </div>
 </div>
 <div class="paragraph">
-<p>The output contains a unique ID for the entry and the ingested SBOM. Head back to the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, reload the page and you should how have 1 SBOM in the database:</p>
+<p>The output contains a unique ID for the entry and the ingested SBOM.</p>
 </div>
+</li>
+<li>
+<p>Head back to the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, reload the page and you should how have 1 SBOM in the database:</p>
 <div class="imageblock">
 <div class="content">
 <img src="_images/rhtpa-sbom-ingested.png" alt="rhtpa sbom ingested">
