@@ -258,9 +258,9 @@ PLAY RECAP **************************
 rhtas : ok=262  changed=114  unreachable=0    failed=0  ...
 ----
 +
-If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the `/home/lab-user` directory correctly and appear correct.
+If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the `/home/lab-user` directory correctly and appear correct. You can then attempt to run the same command again.
 
-. To see the running services on the `rhtas` node, run the following command:
+. Once installation is complete, to see the running services on the `rhtas` node, run the following command:
 +
 [source,bash,role="execute"]
 ----

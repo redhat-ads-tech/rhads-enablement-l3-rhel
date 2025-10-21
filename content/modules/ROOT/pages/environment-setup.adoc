@@ -20,7 +20,8 @@ for prod in rhtas rhtpa; do
     sudo chown lab-user /home/lab-user/$\{prod}*.pem && \
     sudo chmod 660 /home/lab-user/$\{prod}*.pem && \
     cd /home/lab-user && \
-    sudo rm -rf $TMPDIR
+    sudo rm -rf $TMPDIR && \
+    ls -l /home/lab-user
 done
 ----
 +

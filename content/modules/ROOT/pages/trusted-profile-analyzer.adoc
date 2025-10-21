@@ -435,18 +435,99 @@ image::rhtpa-sbom-ingested2.png[]
 . Click on the name of the SBOM. Click on the _Vulnerabilities_ tab and you should see the vulnerabilities for the HTTPD package (there may be one or more discovered since the writing of this module).
 +
 image::rhtpa-vulnerabilities.png[]
+
+== Enable More Importers
+
+As stated earlier, by default, the Red Hat CSAF, Red Hat SBOM, and Quay data importers are disabled. Using the _Importers_ tab, you can enable any of these importers to populate RHTPA with more data. You can also programmatically enable or disable importers using the API endpoints exposed by RHTPA. Let's try that!
+
+. First, retrieve the list of all importers and their current state with the following command:
 +
-. You can also search for vulnerabilities, sboms, or any other object by using the search feature. Click on _Search_ at the left, and try typing in `httpd` to see the various packages, sboms, and any vulnerabilities that may exist:
+[source,bash,role="execute"]
+----
+curl -s -H "Authorization:$(oidc-cli token trusty -b)" \
+  https://rhtpa.${BASE_HOSTNAME}/api/v2/importer | jq
+----
 +
-image::rhtpa-search.png[]
+You will see a series of JSON objects representing the importers and their current state:
 +
-By populating RHTPA with your own SBOMs as part of your CI pipelines _for each and every build_, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the _Importers_ tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you'll see more interesting results:
+[source,json]
+----
+[
+  {
+    "name": "cve",//<1>
+    "heartbeat": 1761060494629838144,//<2>
+    "configuration": {//<3>
+      "cve": {
+        "disabled": false,
+        "period": "1day",
+        "description": "CVE list v5",
+        "source": "https://github.com/CVEProject/cvelistV5"
+      }
+    },
+    "state": "running",//<4>
+    "lastChange": "2025-10-21T14:31:54.62919Z",
+    "progress": {//<5>
+      "current": 130920,
+      "total": 314803,
+      "percent": 0.41587913,
+      "rate": 38.68673,
+      "estimatedSecondsRemaining": 4753,
+      "estimatedCompletion": "2025-10-21T16:47:31.73550335Z"
+    }
+  },
+  ...
+]
+----
+<1> The name of the importer.
+<2> The last time the importer was updated.
+<3> The configuration of the importer.
+<4> The current state of the importer.
+<5> The progress of the importer.
+
+. Now, let's enable the Red Hat SBOM importer with the following command:
 +
-image::rhtpa-importer-enable.png[]
+[source,bash,role="execute"]
+----
+curl -H "Authorization:$(oidc-cli token trusty -b)" \# <1>
+     -H "Content-Type: application/json" \# <2>
+     -w '\nResult: %{http_code}\n' \# <3>
+     -X PUT \# <4>
+     -d 'true' \# <5>
+    https://rhtpa.${BASE_HOSTNAME}/api/v2/importer/redhat-sboms/enabled # <6>
+----
+<1> The authorization token to use to authenticate to the RHTPA API.
+<2> The content type to use for the request.
+<3> The output is written to the terminal with the HTTP status code.
+<4> HTTP PUT method is used along with the `/enabled` suffix on the importer endpoint to enable the importer.
+<5> The body of the request is the boolean value `true` to enable the importer.
+<6> The RHTPA API endpoint to use to enable the `redhat-sboms` importer.
++
+You should get `Result: 2xx` indicating the the importer was enabled successfully (where `2xx` is any HTTP status code in the 200-299 range). Any other status code indicates an error, with a corresponding reason, so you should carefully check that you are executing the command above and try again.
+
+. Navigate back to the https://rhtpa.{base_hostname}[RHTPA web interface^], and click on the _Importers_ tab, you should see the Red Hat SBOM importer enabled and running:
++
+image::rhtpa-importer-enabled.png[]
++
+This can be used to programmatically alter the RHTPA configuration as part of an automated deployment process. After a little while you'll see more interesting results in the dashboard:
 +
 image::rhtpa-dashboard2.png[]
 +
 image::rhtpa-dashboard3.png[]
+
+[NOTE]
+====
+Importers can import a large amount of data! Computing resources, and setting limitations on those resources is important to ensure the application runs stable and performs as expected. In this lab, the default resource request is 1 CPU and 8 GB of RAM, for both the importer and API server deployments. There are no resource limits by default, so if you import enough data you may hit such limits and experience errors or timeouts. Consult the https://console.redhat.com/ansible/automation-hub/repo/published/redhat/trusted_profile_analyzer/content/role/tpa_single_node/[RHTPA Ansible collection documentation^] for more information on how to configure storage and compute resources for RHTPA. 
+====
+
+== Search for Vulnerabilities
+
+You can also search for vulnerabilities, sboms, or any other object by using the search feature.
+
+. On the the https://rhtpa.{base_hostname}[RHTPA web interface^], click on _Search_ at the left, and try typing in `httpd` to see the various packages, sboms, and any vulnerabilities that may exist:
++
+image::rhtpa-search.png[]
++
+By populating RHTPA with your own SBOMs as part of your CI pipelines _for each and every build_, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. 
 
 == Next Steps
 
