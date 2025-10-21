@@ -807,20 +807,137 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
 </div>
 </div>
 </li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_more_importers"><a class="anchor" href="#_enable_more_importers"></a>Enable More Importers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As stated earlier, by default, the Red Hat CSAF, Red Hat SBOM, and Quay data importers are disabled. Using the <em>Importers</em> tab, you can enable any of these importers to populate RHTPA with more data. You can also programmatically enable or disable importers using the API endpoints exposed by RHTPA. Let&#8217;s try that!</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>You can also search for vulnerabilities, sboms, or any other object by using the search feature. Click on <em>Search</em> at the left, and try typing in <code>httpd</code> to see the various packages, sboms, and any vulnerabilities that may exist:</p>
-<div class="imageblock">
+<p>First, retrieve the list of all importers and their current state with the following command:</p>
+<div class="listingblock execute">
 <div class="content">
-<img src="_images/rhtpa-search.png" alt="rhtpa search">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" \
+  https://rhtpa.${BASE_HOSTNAME}/api/v2/importer | jq</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>By populating RHTPA with your own SBOMs as part of your CI pipelines <em>for each and every build</em>, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis. Feel free to enable some of the other importers (Click on the <em>Importers</em> tab and select enable for one or more disabled importers) to see what a larger set of SBOMs and vulnerabilities look like. After a little while you&#8217;ll see more interesting results:</p>
+<p>You will see a series of JSON objects representing the importers and their current state:</p>
 </div>
-<div class="imageblock">
+<div class="listingblock">
 <div class="content">
-<img src="_images/rhtpa-importer-enable.png" alt="rhtpa importer enable">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">[
+  {
+    "name": "cve",<i class="conum" data-value="1"></i><b>(1)</b>
+    "heartbeat": 1761060494629838144,<i class="conum" data-value="2"></i><b>(2)</b>
+    "configuration": {<i class="conum" data-value="3"></i><b>(3)</b>
+      "cve": {
+        "disabled": false,
+        "period": "1day",
+        "description": "CVE list v5",
+        "source": "https://github.com/CVEProject/cvelistV5"
+      }
+    },
+    "state": "running",<i class="conum" data-value="4"></i><b>(4)</b>
+    "lastChange": "2025-10-21T14:31:54.62919Z",
+    "progress": {<i class="conum" data-value="5"></i><b>(5)</b>
+      "current": 130920,
+      "total": 314803,
+      "percent": 0.41587913,
+      "rate": 38.68673,
+      "estimatedSecondsRemaining": 4753,
+      "estimatedCompletion": "2025-10-21T16:47:31.73550335Z"
+    }
+  },
+  ...
+]</code></pre>
 </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The name of the importer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The last time the importer was updated.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The configuration of the importer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The current state of the importer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The progress of the importer.</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Now, let&#8217;s enable the Red Hat SBOM importer with the following command:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -H "Authorization:$(oidc-cli token trusty -b)" \<i class="conum" data-value="1"></i><b>(1)</b>
+     -H "Content-Type: application/json" \<i class="conum" data-value="2"></i><b>(2)</b>
+     -w '\nResult: %{http_code}\n' \<i class="conum" data-value="3"></i><b>(3)</b>
+     -X PUT \<i class="conum" data-value="4"></i><b>(4)</b>
+     -d 'true' \<i class="conum" data-value="5"></i><b>(5)</b>
+    https://rhtpa.${BASE_HOSTNAME}/api/v2/importer/redhat-sboms/enabled <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The authorization token to use to authenticate to the RHTPA API.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The content type to use for the request.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The output is written to the terminal with the HTTP status code.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>HTTP PUT method is used along with the <code>/enabled</code> suffix on the importer endpoint to enable the importer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The body of the request is the boolean value <code>true</code> to enable the importer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The RHTPA API endpoint to use to enable the <code>redhat-sboms</code> importer.
+<div class="paragraph">
+<p>You should get <code>Result: 2xx</code> indicating the the importer was enabled successfully (where <code>2xx</code> is any HTTP status code in the 200-299 range). Any other status code indicates an error, with a corresponding reason, so you should carefully check that you are executing the command above and try again.</p>
+</div></td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Navigate back to the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, and click on the <em>Importers</em> tab, you should see the Red Hat SBOM importer enabled and running:</p>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="rhtpa-importer-enabled.png" alt="rhtpa importer enabled">
+</div>
+</div>
+<div class="paragraph">
+<p>This can be used to programmatically alter the RHTPA configuration as part of an automated deployment process. After a little while you&#8217;ll see more interesting results in the dashboard:</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -835,6 +952,42 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
 </li>
 </ol>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Importers can import a large amount of data! Computing resources, and setting limitations on those resources is important to ensure the application runs stable and performs as expected. In this lab, the default resource request is 1 CPU and 8 GB of RAM, for both the importer and API server deployments. There are no resource limits by default, so if you import enough data you may hit such limits and experience errors or timeouts. Consult the <a href="https://console.redhat.com/ansible/automation-hub/repo/published/redhat/trusted_profile_analyzer/content/role/tpa_single_node/" target="_blank" rel="noopener">RHTPA Ansible collection documentation</a> for more information on how to configure storage and compute resources for RHTPA.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_search_for_vulnerabilities"><a class="anchor" href="#_search_for_vulnerabilities"></a>Search for Vulnerabilities</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can also search for vulnerabilities, sboms, or any other object by using the search feature.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>On the the <a href="https://rhtpa.{base_hostname}" target="_blank" rel="noopener">RHTPA web interface</a>, click on <em>Search</em> at the left, and try typing in <code>httpd</code> to see the various packages, sboms, and any vulnerabilities that may exist:</p>
+<div class="imageblock">
+<div class="content">
+<img src="_images/rhtpa-search.png" alt="rhtpa search">
+</div>
+</div>
+<div class="paragraph">
+<p>By populating RHTPA with your own SBOMs as part of your CI pipelines <em>for each and every build</em>, and enabling the public well-known importers configured in RHTPA, you can begin to evaluate the risk profile of your software supply chain on a regular basis.</p>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>

@@ -512,14 +512,14 @@ rhtas : ok=262  changed=114  unreachable=0    failed=0  ...</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct.</p>
+<p>If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct. You can then attempt to run the same command again.</p>
 </div></td>
 </tr>
 </table>
 </div>
 </li>
 <li>
-<p>To see the running services on the <code>rhtas</code> node, run the following command:</p>
+<p>Once installation is complete, to see the running services on the <code>rhtas</code> node, run the following command:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas sudo "podman pod ps --filter status=running"</code></pre>
