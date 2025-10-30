@@ -518,6 +518,13 @@ rhtas : ok=262  changed=114  unreachable=0    failed=0  ...</code></pre>
 </table>
 </div>
 </li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_inspect_trusted_artifact_signer_installation"><a class="anchor" href="#_inspect_trusted_artifact_signer_installation"></a>Inspect Trusted Artifact Signer installation</h3>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
 <p>Once installation is complete, to see the running services on the <code>rhtas</code> node, run the following command:</p>
 <div class="listingblock execute">
@@ -526,15 +533,94 @@ rhtas : ok=262  changed=114  unreachable=0    failed=0  ...</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This will run the <code>podman pod ps</code> command on the <code>rhtas</code> node. You should see a number of pods for each of the services that were installed for RHTAS, including <code>rekor</code>, <code>rekor-search</code>, <code>fulcio</code>, <code>tuf</code>, <code>tlog</code>, <code>cli-server</code>, <code>trillian</code>, and <code>nginx</code>. To see the log files for the <code>rekor</code> service, run the following command:</p>
+<p>This will run the <code>podman pod ps</code> command on the <code>rhtas</code> node. You should see a number of pods for each of the services that were installed for RHTAS, including <code>rekor</code>, <code>rekor-search</code>, <code>fulcio</code>, <code>tuf</code>, <code>tlog</code>, <code>cli-server</code>, <code>trillian</code>, and <code>nginx</code>.</p>
 </div>
+</li>
+<li>
+<p>To see the log files for the <code>rekor</code> service, run the following command:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas "sudo podman pod logs -f rekor-server-pod"</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Press <kbd>CTRL-C</kbd> to exit the log output. These commands can be useful for debugging issues with the RHTAS installation.</p>
+<p>Press <span class="keyseq"><kbd>CTRL</kbd>+<kbd>C</kbd></span> to exit the log output. These commands can be useful for debugging issues with the RHTAS installation.</p>
+</div>
+<div class="paragraph">
+<p>RHTAS components are deployed using <a href="https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html" target="_blank" rel="noopener"><code>podman kube play</code></a>. The playbook creates a Kubernetes-style deployment for each of the services in the <code>/etc/rhtas/manifeststs</code> directory on the target machine, along with ConfigMaps and Secrets in <code>/etc/rhtas/configs</code> directory, and then runs them as Podman containers on the target machine via <em>systemd</em> services (defined in the <code>/etc/systemd/system</code> directory on the target machine).</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Although these are Kubernetes objects, Podman is not a complete Kubernetes implementation, e.g. there is no control plane, Kubernetes API, or scheduler. <code>podman kube play</code> offers a bridge between Podman and Kubernetes, simplifying the workflow between the two.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Take a look at the <code>rekor</code> systemd service&#8217;s <em>ConfigMap</em>, <em>Secret</em>, and <em>Deployment</em> Kubernetes resources by running the following commands:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "--------------------------------"
+echo "Rekor Deployment:"
+echo "--------------------------------"
+ssh rhtas "sudo cat /etc/rhtas/manifests/rekor-system_rekor-server.yml"
+echo "--------------------------------"
+echo "Rekor ConfigMap:"
+echo "--------------------------------"
+ssh rhtas "sudo cat /etc/rhtas/configs/rekor-server-config.yaml"
+echo "--------------------------------"
+echo "Rekor Secret:"
+echo "--------------------------------"
+ssh rhtas "sudo cat /etc/rhtas/configs/rekor-secret.yaml"
+echo "--------------------------------"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are familiar with Kubernetes, these files should look very familiar. <code>podman kube play</code> creates pods and containers, creates volumes (e.g. for ConfigMaps), and sets up networking policies between services.</p>
+</div>
+<div class="paragraph">
+<p>You will find similar files for the other services in <code>/etc/rhtas</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is recommended to manage the configuration of RHTAS through the supported Ansible playbooks and roles. If you modify the configuration files manually, they will likely be overwritten during the next installation or upgrade. Instead, alter the playbook and re-run it to apply the changes.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>You can inspect the individual RHTAS services using traditional <em>systemd</em> commands. For example, to see the Rekor service&#8217;s current status, run the following command:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas "sudo systemctl status rekor.service" | head -9</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will show the current status of the <code>rekor-server</code> service. Other services can be managed in a similar manner (e.g. <code>fulcio.service</code>, <code>tuf.service</code>, etc). For example, to restart the <code>cli-server</code> service, run the following command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtas "sudo systemctl restart cli-server.service"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will restart the <code>cli-server</code> service.</p>
 </div>
 </li>
 </ol>

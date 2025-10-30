@@ -518,21 +518,19 @@ rhtpa                      : ok=50   changed=14   unreachable=0    failed=0    s
 <p>If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the <code>/home/lab-user</code> directory correctly and appear correct, then run the <code>ansible-navigator</code> command again.</p>
 </div>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_verify_trusted_profile_analyzer_installation"><a class="anchor" href="#_verify_trusted_profile_analyzer_installation"></a>Verify Trusted Profile Analyzer installation</h2>
-<div class="sectionbody">
-<div class="paragraph">
+<div class="sect2">
+<h3 id="_inspect_trusted_profile_analyzer_installation"><a class="anchor" href="#_inspect_trusted_profile_analyzer_installation"></a>Inspect Trusted Profile Analyzer installation</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
 <p>To see the running services on the <code>rhtpa</code> node, run the following command:</p>
-</div>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtpa sudo "podman pod ps --filter status=running"</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>You should see:</p>
+<p>This will run the <code>podman pod ps</code> command on the <code>rhtpa</code> node. You should see:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -544,9 +542,9 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 <div class="paragraph">
 <p>The <code>importer-pod</code> is the pod for the importer service which supports operations for ingesting and retrieving supply-chain data. The <code>server-pod</code> exposes the main API for the RHTPA service, supporting the web interface and API for evaluating the risk profile of your software supply chain which we&#8217;ll explore later.</p>
 </div>
-<div class="paragraph">
-<p>You can also retrieve logs of the services (e.g. the server service) by running the following command:</p>
-</div>
+</li>
+<li>
+<p>Retrieve logs of the services (e.g. the server service) by running the following command:</p>
 <div class="listingblock execute">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtpa "sudo podman pod logs -f server-pod"</code></pre>
@@ -554,6 +552,86 @@ de6ab8f5960b  server-pod    Running     22 minutes ago  681b61bc815d  2</code></
 </div>
 <div class="paragraph">
 <p>Press <kbd>CTRL-C</kbd> to exit the log output. This can be useful for debugging issues with the RHTPA installation.</p>
+</div>
+<div class="paragraph">
+<p>RHTPA components are deployed using <a href="https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html" target="_blank" rel="noopener"><code>podman kube play</code></a>. The playbook creates a Kubernetes-style deployment for each of the services in the <code>/etc/rhtpa/manifeststs</code> directory on the target machine, along with ConfigMaps and Secrets in <code>/etc/rhtpa/configs</code> directory, and then runs them as Podman containers on the target machine via <em>systemd</em> services (defined in the <code>/etc/systemd/system</code> directory on the target machine).</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Although these are Kubernetes objects, Podman is not a complete Kubernetes implementation, e.g. there is no control plane, Kubernetes API, or scheduler. <code>podman kube play</code> offers a bridge between Podman and Kubernetes, simplifying the workflow between the two.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Take a look at the <code>server-pod</code> systemd service&#8217;s <em>ConfigMap</em>, <em>Secret</em>, and <em>Deployment</em> Kubernetes resources by running the following commands:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo "--------------------------------"
+echo "TPA server Deployment:"
+echo "--------------------------------"
+ssh rhtpa "sudo cat /etc/rhtpa/manifests/Deployments/trustification_server.yaml"
+echo "--------------------------------"
+echo "TPA server ConfigMap:"
+echo "--------------------------------"
+ssh rhtpa "sudo cat /etc/rhtpa/manifests/ConfigMaps/server-api.yaml"
+echo "--------------------------------"
+echo "TPA server OIDC Secret:"
+echo "--------------------------------"
+ssh rhtpa "sudo cat /etc/rhtpa/manifests/Secrets/oidc.yaml"
+echo "--------------------------------"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are familiar with Kubernetes, these files should look very familiar. <code>podman kube play</code> creates pods and containers, creates volumes (e.g. for ConfigMaps), and sets up networking policies between services.</p>
+</div>
+<div class="paragraph">
+<p>You will find similar files for the other services in <code>/etc/rhtpa</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is recommended to manage the configuration of RHTPA through the supported Ansible playbooks and roles. If you modify the configuration files manually, they will likely be overwritten during the next installation or upgrade. Instead, alter the playbook and re-run it to apply the changes.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>You can inspect the individual RHTPA services using traditional <em>systemd</em> commands. For example, to see the Importer service&#8217;s current status, run the following command:</p>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtpa "sudo systemctl status importer.service" | head -9</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will show the current status of the Importer service. Other services can be managed in a similar manner (e.g. <code>server.service</code>, etc). For example, to restart the Importer service, run the following command:</p>
+</div>
+<div class="listingblock execute">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">ssh rhtpa "sudo systemctl restart importer.service"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will restart the Importer service.</p>
+</div>
+</li>
+</ol>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_access_the_rhtpa_web_interface"><a class="anchor" href="#_access_the_rhtpa_web_interface"></a>Access the RHTPA web interface</h3>
@@ -730,16 +808,8 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
 <div class="paragraph">
 <p>You should see the SBOM details, including the packages and their vulnerabilities. This is a super simple SBOM and since there are no packages (other than itself) and no dependencies, we should expect no vulnerabilities.</p>
 </div>
-<div class="paragraph">
-<p>This uses the API endpoints exposed by RHTPA to ingest the SBOM which you can use in your own CI pipelines (You can also do the same from the web interface). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the various API endpoints by clicking on the <em>API</em> tab (which takes you to an interactive <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification for RHTPA endpoints</a>):</p>
-</div>
 </li>
 </ol>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="_images/rhtpa-api.png" alt="rhtpa api">
-</div>
 </div>
 </div>
 <div class="sect2">
