@@ -260,6 +260,8 @@ rhtas : ok=262  changed=114  unreachable=0    failed=0  ...
 +
 If you see any errors, scroll up and check for errors in the output. Confirm the files exist in the `/home/lab-user` directory correctly and appear correct. You can then attempt to run the same command again.
 
+=== Inspect Trusted Artifact Signer installation
+
 . Once installation is complete, to see the running services on the `rhtas` node, run the following command:
 +
 [source,bash,role="execute"]
@@ -267,14 +269,67 @@ If you see any errors, scroll up and check for errors in the output. Confirm the
 ssh rhtas sudo "podman pod ps --filter status=running"
 ----
 +
-This will run the `podman pod ps` command on the `rhtas` node. You should see a number of pods for each of the services that were installed for RHTAS, including `rekor`, `rekor-search`, `fulcio`, `tuf`, `tlog`, `cli-server`, `trillian`, and `nginx`. To see the log files for the `rekor` service, run the following command:
+This will run the `podman pod ps` command on the `rhtas` node. You should see a number of pods for each of the services that were installed for RHTAS, including `rekor`, `rekor-search`, `fulcio`, `tuf`, `tlog`, `cli-server`, `trillian`, and `nginx`.
+
+. To see the log files for the `rekor` service, run the following command:
 +
 [source,bash,role="execute"]
 ----
 ssh rhtas "sudo podman pod logs -f rekor-server-pod"
 ----
 +
-Press kbd:[CTRL-C] to exit the log output. These commands can be useful for debugging issues with the RHTAS installation.
+Press kbd:[CTRL+C] to exit the log output. These commands can be useful for debugging issues with the RHTAS installation.
++
+RHTAS components are deployed using https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html[`podman kube play`^]. The playbook creates a Kubernetes-style deployment for each of the services in the `/etc/rhtas/manifeststs` directory on the target machine, along with ConfigMaps and Secrets in `/etc/rhtas/configs` directory, and then runs them as Podman containers on the target machine via _systemd_ services (defined in the `/etc/systemd/system` directory on the target machine).
++
+[NOTE]
+====
+Although these are Kubernetes objects, Podman is not a complete Kubernetes implementation, e.g. there is no control plane, Kubernetes API, or scheduler. `podman kube play` offers a bridge between Podman and Kubernetes, simplifying the workflow between the two.
+====
+
+. Take a look at the `rekor` systemd service's _ConfigMap_, _Secret_, and _Deployment_ Kubernetes resources by running the following commands:
++
+[source,bash,role="execute"]
+----
+echo "--------------------------------"
+echo "Rekor Deployment:"
+echo "--------------------------------"
+ssh rhtas "sudo cat /etc/rhtas/manifests/rekor-system_rekor-server.yml"
+echo "--------------------------------"
+echo "Rekor ConfigMap:"
+echo "--------------------------------"
+ssh rhtas "sudo cat /etc/rhtas/configs/rekor-server-config.yaml"
+echo "--------------------------------"
+echo "Rekor Secret:"
+echo "--------------------------------"
+ssh rhtas "sudo cat /etc/rhtas/configs/rekor-secret.yaml"
+echo "--------------------------------"
+----
++
+If you are familiar with Kubernetes, these files should look very familiar. `podman kube play` creates pods and containers, creates volumes (e.g. for ConfigMaps), and sets up networking policies between services.
++
+You will find similar files for the other services in `/etc/rhtas`.
++
+[NOTE]
+====
+It is recommended to manage the configuration of RHTAS through the supported Ansible playbooks and roles. If you modify the configuration files manually, they will likely be overwritten during the next installation or upgrade. Instead, alter the playbook and re-run it to apply the changes.
+====
+
+. You can inspect the individual RHTAS services using traditional _systemd_ commands. For example, to see the Rekor service's current status, run the following command:
++
+[source,bash,role="execute"]
+----
+ssh rhtas "sudo systemctl status rekor.service" | head -9
+----
++
+This will show the current status of the `rekor-server` service. Other services can be managed in a similar manner (e.g. `fulcio.service`, `tuf.service`, etc). For example, to restart the `cli-server` service, run the following command:
++
+[source,bash,role="execute"]
+----
+ssh rhtas "sudo systemctl restart cli-server.service"
+----
++
+This will restart the `cli-server` service.
 
 == Verify Trusted Artifact Signer installation
 
