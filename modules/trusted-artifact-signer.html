@@ -535,7 +535,7 @@ rhtas : ok=262  changed=114  unreachable=0    failed=0  ...</code></pre>
 <p>Press <span class="keyseq"><kbd>CTRL</kbd>+<kbd>C</kbd></span> to exit the log output. These commands can be useful for debugging issues with the RHTAS installation.</p>
 </div>
 <div class="paragraph">
-<p>RHTAS components are deployed using <a href="https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html" target="_blank" rel="noopener"><code>podman kube play</code></a>. The playbook creates a Kubernetes-style deployment for each of the services in the <code>/etc/rhtas/manifeststs</code> directory on the target machine, along with ConfigMaps and Secrets in <code>/etc/rhtas/configs</code> directory, and then runs them as Podman containers on the target machine via <em>systemd</em> services (defined in the <code>/etc/systemd/system</code> directory on the target machine).</p>
+<p>RHTAS components are deployed using <a href="https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html" target="_blank" rel="noopener"><code>podman kube play</code></a>. The playbook creates a Kubernetes-style deployment for each of the services in the <code>/etc/rhtas/manifests</code> directory on the target machine, along with ConfigMaps and Secrets in <code>/etc/rhtas/configs</code> directory, and then runs them as Podman containers on the target machine via <em>systemd</em> services (defined in the <code>/etc/systemd/system</code> directory on the target machine).</p>
 </div>
 <div class="admonitionblock note">
 <table>
