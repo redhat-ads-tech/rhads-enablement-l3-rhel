@@ -542,7 +542,7 @@ git config user.email $EMAIL_ADDRESS # <9>
 <6> Use our Rekor instance
 <7> Use our OIDC provider
 <8> OIDC client name
-<9> Set the user identity. Note that Git's author field is just unverified metadata. Anyone with write access can commit as anyone else
+<9> Set the user identity. Note that Git's `user.name` and `user.email` fields are just unverified metadata. Anyone with write access can commit as anyone else. But to produce a valie, verifable, _signed_ commit, they must be able to authenticate against the configured OIDC provider which can be checked by the `gitsign verify` command (which we'll do in a few more steps).
 
 . Make a test commit and sign it:
 +
