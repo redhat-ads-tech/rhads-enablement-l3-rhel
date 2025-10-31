@@ -63,7 +63,9 @@ export REGISTRY_PASSWORD='<your password or service account token>'
 +
 [source,bash, role="execute"]
 ----
-podman login registry.redhat.io -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"
+podman login registry.redhat.io \
+  -u "$REGISTRY_USERNAME" \
+  -p "$REGISTRY_PASSWORD"
 ----
 +
 You should see `Login Succeeded!` indicating that you are logged in. If you get an error, confirm that your credentials are correct and that you have the correct permissions to access the registry.
@@ -420,13 +422,22 @@ oidc-cli create confidential trusty --issuer $OIDC_ISSUER_URL \
          --client-id $KEYCLOAK_CLI_CLIENT_ID \
          --client-secret $OIDC_CLIENT_SECRET
 ----
++
+With this, we can conveniently generate the necessary authorization token using `odc-cli token` command, which we'll do next.
 
 . Ingest the SBOM from `/tmp/test-sbom.json` into RHTPA:
 +
 [source,bash,role="execute"]
 ----
-curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @/tmp/test-sbom.json https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq
+curl -s \# <1>
+  -H "Authorization:$(oidc-cli token trusty -b)" \# <2>
+  -d @/tmp/test-sbom.json \# <3>
+  https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq # <4>
 ----
+<1> Don't show progress output
+<2> Generate the authorization token to use to authenticate to the RHTPA API and put it in the `Authorization` header.
+<3> The SBOM file to ingest.
+<4> The API endpoint to use to ingest the SBOM. The output is pretty printed using `jq`.
 +
 This uses the `/api/v2/sbom` endpoint exposed by RHTPA to ingest the SBOM (which you can do in your own CI pipelines). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the _API_ tab (which takes you to the https://rhtpa.{base_hostname}/openapi[OpenAPI specification^] for RHTPA endpoints). For more detail the kinds of things you can do with the API, see the https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer/2.1/html-single/rest_api/index[RHTPA REST API documentation^].
 +
@@ -491,9 +502,13 @@ As stated earlier, by default, the Red Hat CSAF, Red Hat SBOM, and Quay data imp
 +
 [source,bash,role="execute"]
 ----
-curl -s -H "Authorization:$(oidc-cli token trusty -b)" \
-  https://rhtpa.${BASE_HOSTNAME}/api/v2/importer | jq
+curl -s \# <1>
+  -H "Authorization:$(oidc-cli token trusty -b)" \# <2>
+  https://rhtpa.${BASE_HOSTNAME}/api/v2/importer | jq # <3>
 ----
+<1> Don't show progress output
+<2> The authorization token to use to authenticate to the RHTPA API.
+<3> The API endpoint to use to retrieve the list of importers. The output is pretty printed using `jq`.
 +
 You will see a series of JSON objects representing the importers and their current state:
 +
@@ -501,9 +516,9 @@ You will see a series of JSON objects representing the importers and their curre
 ----
 [
   {
-    "name": "cve",//<1>
-    "heartbeat": 1761060494629838144,//<2>
-    "configuration": {//<3>
+    "name": "cve", // <4>
+    "heartbeat": 1761060494629838144, // <5>
+    "configuration": { // <6>
       "cve": {
         "disabled": false,
         "period": "1day",
@@ -511,9 +526,9 @@ You will see a series of JSON objects representing the importers and their curre
         "source": "https://github.com/CVEProject/cvelistV5"
       }
     },
-    "state": "running",//<4>
+    "state": "running", // <7>
     "lastChange": "2025-10-21T14:31:54.62919Z",
-    "progress": {//<5>
+    "progress": { // <8>
       "current": 130920,
       "total": 314803,
       "percent": 0.41587913,
@@ -525,11 +540,11 @@ You will see a series of JSON objects representing the importers and their curre
   ...
 ]
 ----
-<1> The name of the importer.
-<2> The last time the importer was updated.
-<3> The configuration of the importer.
-<4> The current state of the importer.
-<5> The progress of the importer.
+<4> The name of the importer.
+<5> The last time the importer was updated.
+<6> The configuration of the importer.
+<7> The current state of the importer.
+<8> The progress of the importer.
 
 . Now, let's enable the Red Hat SBOM importer with the following command:
 +

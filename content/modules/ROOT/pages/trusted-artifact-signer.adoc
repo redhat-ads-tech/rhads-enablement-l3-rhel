@@ -85,7 +85,9 @@ export REGISTRY_PASSWORD='<your password or service account token>'
 +
 [source,bash, role="execute"]
 ----
-podman login registry.redhat.io -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"
+podman login registry.redhat.io \
+       -u "$REGISTRY_USERNAME" \
+       -p "$REGISTRY_PASSWORD"
 ----
 +
 You should see `Login Succeeded!` indicating that you are logged in. If you get an error, confirm that your credentials are correct and that you have the correct permissions to access the registry.
@@ -357,7 +359,8 @@ The CLI server also has a https://cli-server.{base_hostname}[web interface^] for
 [source,bash,role="execute"]
 ----
 curl -LO $COSIGN_ROOT # <1>
-cosign initialize --root-checksum=$(sha256sum root.json | cut -d' ' -f1) # <2>
+cosign initialize \
+  --root-checksum=$(sha256sum root.json | cut -d' ' -f1) # <2>
 ----
 <1> Downloads the known-good `root.json` file (containing the trusted certificate and key targets) from the local TUF server.
 <2> Initialize cosign to prepare for signing and verification later on using the known-good TUF root.
@@ -426,10 +429,14 @@ Now verify the image
 +
 [source,bash,role="execute"]
 ----
-cosign verify --certificate-identity=$EMAIL_ADDRESS ttl.sh/rhtas/test-image-$GUID:1h | jq
+cosign verify \
+    --certificate-identity=$EMAIL_ADDRESS \# <1>
+    ttl.sh/rhtas/test-image-$GUID:1h | jq # <2>
 ----
+<1> The expected identify of the signer
+<2> The image to verify, and pretty-print the resulting JSON with `jq`
 +
-To verify, Cosign queries the transparency log (Rekor) to compare the public key bound to the certificate, and checks the timestamp on the signature against the artifact's entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid.
+To verify, Cosign queries the transparency log (Rekor) to compare the expected identity's public key bound to the certificate, and checks the timestamp on the signature against the artifact's entry in the transparency log. The signature is valid if its timestamp falls within the small window of time that the key pair and certificate issued by the certificate authority were valid and that the identity of the signer matches the expected identity
 +
 If successful, you should see the following output (at the start, before the JSON representation of the signature):
 +
@@ -460,16 +467,20 @@ sudo chmod +x rekor-cli && sudo mv rekor-cli /usr/local/bin/rekor-cli
 +
 [source,bash,role="execute"]
 ----
-rekor-cli get --log-index 0 --rekor_server $COSIGN_REKOR_URL --format json | jq
+rekor-cli get --log-index 0 \
+              --rekor_server $COSIGN_REKOR_URL \
+              --format json | jq
 ----
 +
-You should see the JSON representation of the first entry in the log, containing the submitted artifact (your container image), and the inclusion proof and signed timestamp, which can be used to verify consistency and integrity of the artifact.
+You should see the JSON representation of the first entry (index `0`) in the log, containing the submitted artifact (your container image), and the inclusion proof and signed timestamp, which can be used to verify consistency and integrity of the artifact.
 
 . Search for an email address to get the universal unique identifier (UUID):
 +
 [source,bash,role="execute"]
 ----
-rekor-cli search --email $EMAIL_ADDRESS --rekor_server $COSIGN_REKOR_URL --format json | jq
+rekor-cli search --email $EMAIL_ADDRESS \
+                 --rekor_server $COSIGN_REKOR_URL\
+                 --format json | jq
 ----
 This command returns the UUID of any log entries that match the email address (you should see only one, but if you repeated the singing process you'd see two). This UUID can be used to get the transaction details.
 
@@ -477,7 +488,9 @@ This command returns the UUID of any log entries that match the email address (y
 +
 [source,bash,role="execute"]
 ----
-rekor-cli get --uuid $UUID --rekor_server $COSIGN_REKOR_URL --format json | jq
+rekor-cli get --uuid $UUID \
+              --rekor_server $COSIGN_REKOR_URL \
+              --format json | jq
 ----
 You will get the same entry as before.
 
@@ -510,38 +523,58 @@ sudo chmod +x gitsign && sudo mv gitsign /usr/local/bin/gitsign
 ----
 rm -rf ~/tmp-git-repo && mkdir -p ~/tmp-git-repo && cd ~/tmp-git-repo
 git init
-git config --local commit.gpgsign true # sign all commits
-git config --local tag.gpgsign true # sign all tags
-git config --local gpg.x509.program gitsign # use gitsign for signing
-git config --local gpg.format x509 # use x509 format for signing
-git config --local gitsign.fulcio $SIGSTORE_FULCIO_URL # use our Fulcio instance
-git config --local gitsign.rekor $SIGSTORE_REKOR_URL # use our Rekor instance
-git config --local gitsign.issuer $SIGSTORE_OIDC_ISSUER # use our OIDC provider
-git config --local gitsign.clientID trusted-artifact-signer # OIDC client name
+git config commit.gpgsign true # <1>
+git config tag.gpgsign true # <2>
+git config gpg.x509.program gitsign # <3>
+git config gpg.format x509 # <4>
+git config gitsign.fulcio $SIGSTORE_FULCIO_URL # <5>
+git config gitsign.rekor $SIGSTORE_REKOR_URL # <6>
+git config gitsign.issuer $SIGSTORE_OIDC_ISSUER # <7>
+git config gitsign.clientID trusted-artifact-signer # <8>
+git config user.name {rhtas_user1_username} # <9>
+git config user.email $EMAIL_ADDRESS # <9>
 ----
+<1> Sign all commits
+<2> Sign all tags
+<3> Use `gitsign` for signing
+<4> Use x509 format for signing
+<5> Use our Fulcio instance
+<6> Use our Rekor instance
+<7> Use our OIDC provider
+<8> OIDC client name
+<9> Set the user identity. Note that Git's author field is just unverified metadata. Anyone with write access can commit as anyone else
 
 . Make a test commit and sign it:
 +
 [source,bash,role="execute"]
 ----
-git commit --allow-empty -S -m "Test of a signed commit"
+git commit --allow-empty \# <1>
+           -S \# <2>
+           -m "Test of a signed commit" # <3>
 ----
+<1> Allow an empty commit (for testing the process)
+<2> Sign the commit using `gitsign`
+<3> Message for the commit
 +
-The same process should be followed as before. Copy the code from the web browser into the terminal to complete the commit process and sign the commit. You should seE:
+The same process should be followed as before. Copy the code from the web browser into the terminal to complete the commit process and sign the commit. You should see:
 +
 [source,console]
 ----
-tlog entry created with index: 2
-[master (root-commit) 615b060] Test of a signed commit
- Committer: Red Hat Demo Platform Student <lab-user@bastion.lab.sandbox-7cx24-multi-cloud-base-infra.svc.cluster.local>
+tlog entry created with index: 1
+[master 35fe970] Test of a signed commit
 ----
 
 . Verify the commit:
 +
 [source,bash,role="execute"]
 ----
-gitsign verify --certificate-identity=$EMAIL_ADDRESS --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER HEAD
+gitsign verify --certificate-identity=$EMAIL_ADDRESS \# <1>
+               --certificate-oidc-issuer=$SIGSTORE_OIDC_ISSUER \# <2>
+               HEAD # <3>
 ----
+<1> The expected identify of the signer
+<2> The OIDC issuer of the signer's certificate
+<3> Which commit to verify
 +
 This extracts the signature attached to the commit, verifies it against the certificate issued during the signing process, confirms the certificate chain is valid against the known good trusted root, and that the signing certificate was recorded in Rekor, and that the OIDC identity matches what's expected.
 +
@@ -557,7 +590,12 @@ Validated Rekor entry: true
 Validated Certificate claims: true
 ----
 +
-Note the `Good signature` and Validation confirmations indicating that the signature is valid on the commit.
+The `Good signature` and Validation confirmations indicating that the signature is valid on the commit.
+
+[NOTE]
+====
+You might have noticed that we are just verifying the `HEAD` signature (the last commit). Depending on your requirements, you can iterate through the git log and verify each commit down to a desired depth, ensuring nothing unsigned was added after a secure baseline. 
+====
 
 === Method 3: Policy Validation with Conforma (Enterprise Contract)
 
@@ -565,7 +603,12 @@ The first two methods explored above verify the authenticity of the artifact (co
 
 https://conforma.dev/[Conforma^], formally known as Enterprise Contract (EC), is a tool for maintaining the security of software supply chains, and you can use it to define and enforce policies for container images. You can use the `ec` binary to verify the attestation (verifiable claims about any aspect of how a piece of software is produced) and signature of container images that use Red Hat's Trusted Artifact Signer (RHTAS) signing framework. This is typically used in CI pipelines during container image promotion and deployment. Conforma policies are defined using the https://www.openpolicyagent.org/docs/policy-language[rego policy language^].
 
-. Download the ec binary from the CLI server:
+[TIP]
+====
+You can learn much more about Conforma, policies, predicates, security frameworks like SLSA, and other related topics in the *Security Best Practices* module in the *Red Hat Advanced Developer Suite: Technical Hands-On Enablement* course available on the Red Hat Learning Platform(which you may even be enrolled in right now!). For now, let's step through the process of using _Conforma_ to verify the attestation and signature of a container image.
+====
+
+. Download the `ec` binary from the CLI server:
 +
 [source,bash,role="execute"]
 ----
@@ -603,12 +646,19 @@ EOF
 This file is just an example with dummy data. In a real-world scenario, you would use the actual data from the build of the container image, including a real builder ID, links to source repos, dependencies in `materials`, and how it was built (in the `invocation` and `buildConfig` fields).
 ====
 
-. Attach the `predicate.json` file to the test image:
+. Sign and attach ("attest") the `predicate.json` file to the test image:
 +
 [source,bash,role="execute"]
 ----
-cosign attest -y --predicate ~/predicate.json --type slsaprovenance ttl.sh/rhtas/test-image-$GUID:1h
+cosign attest -y \# <1>
+       --predicate ~/predicate.json \# <2>
+       --type slsaprovenance \# <3>
+       ttl.sh/rhtas/test-image-$GUID:1h # <4>
 ----
+<1> Skip confirmation prompts for non-destructive operations 
+<2> Use the `predicate.json` file we created to attach the attestation to the image
+<3> Use the `slsaprovenance` type for the attestation. 
+<4> The image to attest
 +
 The same process should be followed as before. Copy the code from the web browser into the terminal to complete the attestation process. You should see:
 +
@@ -641,16 +691,23 @@ This outputs any attached attestation and signature for the image. You should se
 +
 [source,bash,role="execute"]
 ----
-ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h --certificate-identity $EMAIL_ADDRESS --certificate-oidc-issuer $OIDC_ISSUER_URL --output yaml --show-successes
+ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h \# <1>
+                  --certificate-identity $EMAIL_ADDRESS \# <2>
+                  --certificate-oidc-issuer $OIDC_ISSUER_URL \# <3>
+                  --output yaml --show-successes --info # <4>
 ----
-
+<1> The image to validate
+<2> The expected identity of the signer
+<3> The OIDC issuer of the signer's certificate
+<4> Output the results in YAML format and list the successful policy checks
++
 Conforma generates a pass-fail report with details on any security violations. When you add the `--info` flag, the report includes more details and possible solutions for any violations found.
 
 If all verification steps complete successfully, your RHTAS installation is working correctly and ready for production use.
 
 [NOTE]
 ====
-Without specifying a policy, Conforma just does the minimal integrity checks and calls it a day. In practice, organizations would typically define policies to check against, and use Conforma to validate the artifacts against those policies. For example, the Conforma project has some https://conforma.dev/docs/policy/index.html[pre-defined policy definitions^] for common security best practices that organizations can start with, and it is designed to be extensible to allow for organizations to define their own policies. You can see how our dummy data fares against these policies (using `@minimal`) by running 
+Without specifying a policy, Conforma just does the minimal integrity checks and calls it a day. In practice, organizations would typically define policies to check against, and use Conforma to validate the artifacts against those policies. For example, the Conforma project has some https://conforma.dev/docs/policy/index.html[pre-defined policy definitions^] for common security best practices that organizations can start with, and it is designed to be extensible to allow for organizations to define their own policies. You can see how our dummy data fares against these policies (even using the basic `@minimal` policy) by running 
 
 [source,bash,role="execute"]
 ----
@@ -664,7 +721,7 @@ ec validate image --image ttl.sh/rhtas/test-image-$GUID:1h --certificate-identit
     ]
   }'  
 ----
-Here you can see a number of _violations_ in the output indicating our dummy data failed the policy checks.
+Here you can see a number of _violations_ in the output indicating our dummy data failed the policy checks. The https://conforma.dev/docs/policy/release_policy.html[Conforma Release Policy page^] shows what's included in `@minimal` as well as what Red Hat Products use (the `@redhat` policy collection).
 ====
 
 
