@@ -969,7 +969,7 @@ git config user.email $EMAIL_ADDRESS <i class="conum" data-value="9"></i><b>(9)<
 </tr>
 <tr>
 <td><i class="conum" data-value="9"></i><b>9</b></td>
-<td>Set the user identity. Note that Git&#8217;s author field is just unverified metadata. Anyone with write access can commit as anyone else</td>
+<td>Set the user identity. Note that Git&#8217;s <code>user.name</code> and <code>user.email</code> fields are just unverified metadata. Anyone with write access can commit as anyone else. But to produce a valie, verifable, <em>signed</em> commit, they must be able to authenticate against the configured OIDC provider which can be checked by the <code>gitsign verify</code> command (which we&#8217;ll do in a few more steps).</td>
 </tr>
 </table>
 </div>
