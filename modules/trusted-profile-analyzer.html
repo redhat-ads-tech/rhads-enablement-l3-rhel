@@ -201,7 +201,9 @@ export REGISTRY_PASSWORD='&lt;your password or service account token&gt;'</code>
 <p>To verify that your credentials are correct, attempt to login to the registry using <code>podman login</code>:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman login registry.redhat.io -u "$REGISTRY_USERNAME" -p "$REGISTRY_PASSWORD"</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">podman login registry.redhat.io \
+  -u "$REGISTRY_USERNAME" \
+  -p "$REGISTRY_PASSWORD"</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -751,14 +753,37 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
          --client-secret $OIDC_CLIENT_SECRET</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>With this, we can conveniently generate the necessary authorization token using <code>odc-cli token</code> command, which we&#8217;ll do next.</p>
+</div>
 </li>
 <li>
 <p>Ingest the SBOM from <code>/tmp/test-sbom.json</code> into RHTPA:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" -d @/tmp/test-sbom.json https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s \<i class="conum" data-value="1"></i><b>(1)</b>
+  -H "Authorization:$(oidc-cli token trusty -b)" \<i class="conum" data-value="2"></i><b>(2)</b>
+  -d @/tmp/test-sbom.json \<i class="conum" data-value="3"></i><b>(3)</b>
+  https://rhtpa.${BASE_HOSTNAME}/api/v2/sbom | jq <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
 </div>
 </div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Don&#8217;t show progress output</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Generate the authorization token to use to authenticate to the RHTPA API and put it in the <code>Authorization</code> header.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The SBOM file to ingest.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The API endpoint to use to ingest the SBOM. The output is pretty printed using <code>jq</code>.
 <div class="paragraph">
 <p>This uses the <code>/api/v2/sbom</code> endpoint exposed by RHTPA to ingest the SBOM (which you can do in your own CI pipelines). There are many more APIs exposed by RHTPA which you can use to manage your software supply chain. You can see the by clicking on the <em>API</em> tab (which takes you to the <a href="https://rhtpa.{base_hostname}/openapi" target="_blank" rel="noopener">OpenAPI specification</a> for RHTPA endpoints). For more detail the kinds of things you can do with the API, see the <a href="https://docs.redhat.com/en/documentation/red_hat_trusted_profile_analyzer/2.1/html-single/rest_api/index" target="_blank" rel="noopener">RHTPA REST API documentation</a>.</p>
 </div>
@@ -775,6 +800,9 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
 </div>
 <div class="paragraph">
 <p>The output contains a unique ID for the entry and the ingested SBOM.</p>
+</div></td>
+</tr>
+</table>
 </div>
 </li>
 <li>
@@ -881,10 +909,24 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
 <p>First, retrieve the list of all importers and their current state with the following command:</p>
 <div class="listingblock execute">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s -H "Authorization:$(oidc-cli token trusty -b)" \
-  https://rhtpa.${BASE_HOSTNAME}/api/v2/importer | jq</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -s \<i class="conum" data-value="1"></i><b>(1)</b>
+  -H "Authorization:$(oidc-cli token trusty -b)" \<i class="conum" data-value="2"></i><b>(2)</b>
+  https://rhtpa.${BASE_HOSTNAME}/api/v2/importer | jq <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
 </div>
 </div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Don&#8217;t show progress output</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The authorization token to use to authenticate to the RHTPA API.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The API endpoint to use to retrieve the list of importers. The output is pretty printed using <code>jq</code>.
 <div class="paragraph">
 <p>You will see a series of JSON objects representing the importers and their current state:</p>
 </div>
@@ -892,9 +934,9 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">[
   {
-    "name": "cve",<i class="conum" data-value="1"></i><b>(1)</b>
-    "heartbeat": 1761060494629838144,<i class="conum" data-value="2"></i><b>(2)</b>
-    "configuration": {<i class="conum" data-value="3"></i><b>(3)</b>
+    "name": "cve", <i class="conum" data-value="4"></i><b>(4)</b>
+    "heartbeat": 1761060494629838144, <i class="conum" data-value="5"></i><b>(5)</b>
+    "configuration": { <i class="conum" data-value="6"></i><b>(6)</b>
       "cve": {
         "disabled": false,
         "period": "1day",
@@ -902,9 +944,9 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
         "source": "https://github.com/CVEProject/cvelistV5"
       }
     },
-    "state": "running",<i class="conum" data-value="4"></i><b>(4)</b>
+    "state": "running", <i class="conum" data-value="7"></i><b>(7)</b>
     "lastChange": "2025-10-21T14:31:54.62919Z",
-    "progress": {<i class="conum" data-value="5"></i><b>(5)</b>
+    "progress": { <i class="conum" data-value="8"></i><b>(8)</b>
       "current": 130920,
       "total": 314803,
       "percent": 0.41587913,
@@ -916,27 +958,26 @@ sudo mv /tmp/oidc-cli /usr/local/bin/oidc-cli</code></pre>
   ...
 ]</code></pre>
 </div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The name of the importer.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>The last time the importer was updated.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The configuration of the importer.</td>
+</div></td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>The current state of the importer.</td>
+<td>The name of the importer.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The last time the importer was updated.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The configuration of the importer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>The current state of the importer.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
 <td>The progress of the importer.</td>
 </tr>
 </table>
