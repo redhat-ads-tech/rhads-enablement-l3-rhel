@@ -295,7 +295,7 @@ ssh rhtpa "sudo podman pod logs -f server-pod"
 +
 Press kbd:[CTRL-C] to exit the log output. This can be useful for debugging issues with the RHTPA installation.
 +
-RHTPA components are deployed using https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html[`podman kube play`^]. The playbook creates a Kubernetes-style deployment for each of the services in the `/etc/rhtpa/manifeststs` directory on the target machine, along with ConfigMaps and Secrets in `/etc/rhtpa/configs` directory, and then runs them as Podman containers on the target machine via _systemd_ services (defined in the `/etc/systemd/system` directory on the target machine).
+RHTPA components are deployed using https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html[`podman kube play`^]. The playbook creates a Kubernetes-style deployment for each of the services in the `/etc/rhtpa/manifests` directory on the target machine, along with ConfigMaps and Secrets in `/etc/rhtpa/configs` directory, and then runs them as Podman containers on the target machine via _systemd_ services (defined in the `/etc/systemd/system` directory on the target machine).
 +
 [NOTE]
 ====

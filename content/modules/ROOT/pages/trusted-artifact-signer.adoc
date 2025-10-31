@@ -280,7 +280,7 @@ ssh rhtas "sudo podman pod logs -f rekor-server-pod"
 +
 Press kbd:[CTRL+C] to exit the log output. These commands can be useful for debugging issues with the RHTAS installation.
 +
-RHTAS components are deployed using https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html[`podman kube play`^]. The playbook creates a Kubernetes-style deployment for each of the services in the `/etc/rhtas/manifeststs` directory on the target machine, along with ConfigMaps and Secrets in `/etc/rhtas/configs` directory, and then runs them as Podman containers on the target machine via _systemd_ services (defined in the `/etc/systemd/system` directory on the target machine).
+RHTAS components are deployed using https://docs.podman.io/en/latest/markdown/podman-kube-play.1.html[`podman kube play`^]. The playbook creates a Kubernetes-style deployment for each of the services in the `/etc/rhtas/manifests` directory on the target machine, along with ConfigMaps and Secrets in `/etc/rhtas/configs` directory, and then runs them as Podman containers on the target machine via _systemd_ services (defined in the `/etc/systemd/system` directory on the target machine).
 +
 [NOTE]
 ====
