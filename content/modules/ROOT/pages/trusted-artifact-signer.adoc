@@ -360,6 +360,8 @@ The CLI server also has a https://cli-server.{base_hostname}[web interface^] for
 ----
 curl -LO $COSIGN_ROOT # <1>
 cosign initialize \
+  --root=$COSIGN_ROOT \
+  --mirror=$COSIGN_MIRROR \
   --root-checksum=$(sha256sum root.json | cut -d' ' -f1) # <2>
 ----
 <1> Downloads the known-good `root.json` file (containing the trusted certificate and key targets) from the local TUF server.
